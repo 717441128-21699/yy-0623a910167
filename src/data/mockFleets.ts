@@ -80,7 +80,7 @@ export const mockFleets: Fleet[] = [
     members: [
       { id: 'm1-1', userId: 'u1', name: '推理狂人', avatar: 'https://picsum.photos/id/64/200/200', status: 'confirmed', gender: 'male', rolePreference: '张官生', joinTime: '1750377000000', confirmed: true, assignedRoleId: 'r1-1' },
       { id: 'm1-2', userId: 'u2', name: '小樱花', avatar: 'https://picsum.photos/id/91/200/200', status: 'confirmed', gender: 'female', rolePreference: '周小小', availableTime: '14:00准时到', joinTime: '1750378800000', confirmed: true, assignedRoleId: 'r1-2', canCrossPlay: false, hasReadSeries: false },
-      { id: 'm1-3', userId: 'u3', name: '剧本杀老炮', avatar: 'https://picsum.photos/id/177/200/200', status: 'pending', gender: 'male', rolePreference: '白望海', availableTime: '13:50到', joinTime: '1750384200000', confirmed: false, canCrossPlay: true, hasReadSeries: true },
+      { id: 'm1-3', userId: 'u3', name: '剧本杀老炮', avatar: 'https://picsum.photos/id/177/200/200', status: 'pending', gender: 'male', rolePreference: '白望海', preferredRoleId: 'r1-3', availableTime: '13:50到', joinTime: '1750384200000', confirmed: false, canCrossPlay: true, hasReadSeries: true },
       { id: 'm1-4', userId: 'u4', name: '柯南迷', avatar: 'https://picsum.photos/id/338/200/200', status: 'waitlist', gender: 'female', rolePreference: '齐小凤', availableTime: '14:10前到', joinTime: '1750386000000', confirmed: false, canCrossPlay: false, hasReadSeries: false }
     ],
     roleSlots: [
@@ -92,8 +92,8 @@ export const mockFleets: Fleet[] = [
       { id: 'r1-6', name: '林梦婷', gender: 'female', description: '22岁，刚毕业的大学生' }
     ],
     roleAssignments: [
-      { roleId: 'r1-1', memberId: 'u1', status: 'confirmed' },
-      { roleId: 'r1-2', memberId: 'u2', status: 'confirmed' }
+      { roleId: 'r1-1', memberId: 'm1-1', status: 'confirmed' },
+      { roleId: 'r1-2', memberId: 'm1-2', status: 'confirmed' }
     ],
     status: 'recruiting',
     isExclusive: true,
@@ -137,9 +137,9 @@ export const mockFleets: Fleet[] = [
       { id: 'r2-6', name: '余心乐', gender: 'male', description: '体育生，热情仗义' }
     ],
     roleAssignments: [
-      { roleId: 'r2-1', memberId: 'u5', status: 'confirmed' },
-      { roleId: 'r2-2', memberId: 'u6', status: 'confirmed' },
-      { roleId: 'r2-3', memberId: 'u7', status: 'confirmed' }
+      { roleId: 'r2-1', memberId: 'm2-1', status: 'confirmed' },
+      { roleId: 'r2-2', memberId: 'm2-2', status: 'confirmed' },
+      { roleId: 'r2-3', memberId: 'm2-3', status: 'confirmed' }
     ],
     status: 'recruiting',
     isExclusive: false,
@@ -174,7 +174,7 @@ export const mockFleets: Fleet[] = [
       { id: 'm3-2', userId: 'u9', name: '小太阳', avatar: 'https://picsum.photos/id/1025/200/200', status: 'confirmed', gender: 'female', rolePreference: '白如镜', availableTime: '14:50到', joinTime: '1750287000000', confirmed: false, assignedRoleId: 'r3-2', canCrossPlay: true, hasReadSeries: false },
       { id: 'm3-3', userId: 'u10', name: '乐翻天', avatar: 'https://picsum.photos/id/1027/200/200', status: 'confirmed', gender: 'male', rolePreference: '董建国', availableTime: '15:00准时', joinTime: '1750288800000', confirmed: false, assignedRoleId: 'r3-3', canCrossPlay: false, hasReadSeries: false },
       { id: 'm3-4', userId: 'u11', name: '奶茶控', avatar: 'https://picsum.photos/id/1035/200/200', status: 'confirmed', gender: 'female', rolePreference: '李民俊', availableTime: '14:55到', joinTime: '1750290000000', confirmed: true, assignedRoleId: 'r3-4', canCrossPlay: false, hasReadSeries: true },
-      { id: 'm3-5', userId: 'u12', name: '笑笑', avatar: 'https://picsum.photos/id/1038/200/200', status: 'pending', gender: 'female', rolePreference: '林笑', availableTime: '可能晚10分钟', joinTime: '1750292400000', confirmed: false, canCrossPlay: false, hasReadSeries: false },
+      { id: 'm3-5', userId: 'u12', name: '笑笑', avatar: 'https://picsum.photos/id/1038/200/200', status: 'pending', gender: 'female', rolePreference: '林笑', preferredRoleId: 'r3-5', availableTime: '可能晚10分钟', joinTime: '1750292400000', confirmed: false, canCrossPlay: false, hasReadSeries: false },
       { id: 'm3-6', userId: 'u13', name: '阿杰', avatar: 'https://picsum.photos/id/1036/200/200', status: 'waitlist', gender: 'male', joinTime: '1750294200000', confirmed: false },
       { id: 'm3-7', userId: 'u14', name: '小凡', avatar: 'https://picsum.photos/id/1039/200/200', status: 'waitlist', gender: 'male', joinTime: '1750296000000', confirmed: false }
     ],
@@ -191,10 +191,10 @@ export const mockFleets: Fleet[] = [
       { id: 'r3-10', name: '关洁', gender: 'female', description: '28岁，职场丽人' }
     ],
     roleAssignments: [
-      { roleId: 'r3-1', memberId: 'u8', status: 'confirmed' },
-      { roleId: 'r3-2', memberId: 'u9', status: 'confirmed' },
-      { roleId: 'r3-3', memberId: 'u10', status: 'confirmed' },
-      { roleId: 'r3-4', memberId: 'u11', status: 'confirmed' }
+      { roleId: 'r3-1', memberId: 'm3-1', status: 'confirmed' },
+      { roleId: 'r3-2', memberId: 'm3-2', status: 'confirmed' },
+      { roleId: 'r3-3', memberId: 'm3-3', status: 'confirmed' },
+      { roleId: 'r3-4', memberId: 'm3-4', status: 'confirmed' }
     ],
     status: 'recruiting',
     isExclusive: false,
@@ -237,8 +237,8 @@ export const mockFleets: Fleet[] = [
       { id: 'r4-6', name: '嫌疑人B', gender: 'any' }
     ],
     roleAssignments: [
-      { roleId: 'r4-1', memberId: 'u15', status: 'confirmed' },
-      { roleId: 'r4-2', memberId: 'u16', status: 'confirmed' }
+      { roleId: 'r4-1', memberId: 'm4-1', status: 'confirmed' },
+      { roleId: 'r4-2', memberId: 'm4-2', status: 'confirmed' }
     ],
     status: 'recruiting',
     isExclusive: false,
@@ -284,10 +284,10 @@ export const mockFleets: Fleet[] = [
       { id: 'r5-6', name: '少女C', gender: 'female' }
     ],
     roleAssignments: [
-      { roleId: 'r5-1', memberId: 'u17', status: 'confirmed' },
-      { roleId: 'r5-2', memberId: 'u18', status: 'confirmed' },
-      { roleId: 'r5-3', memberId: 'u19', status: 'confirmed' },
-      { roleId: 'r5-4', memberId: 'u20', status: 'confirmed' }
+      { roleId: 'r5-1', memberId: 'm5-1', status: 'confirmed' },
+      { roleId: 'r5-2', memberId: 'm5-2', status: 'confirmed' },
+      { roleId: 'r5-3', memberId: 'm5-3', status: 'confirmed' },
+      { roleId: 'r5-4', memberId: 'm5-4', status: 'confirmed' }
     ],
     status: 'recruiting',
     isExclusive: true,

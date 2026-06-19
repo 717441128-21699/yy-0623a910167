@@ -4,16 +4,16 @@ import './app.scss';
 import { useFleetStore } from '@/store/fleetStore';
 import { mockFleets } from '@/data/mockFleets';
 
-function App(props) {
-  const initStore = useFleetStore((state) => {
-    return state.fleets.length === 0;
-  });
+const STORE_VERSION = 'v2';
 
+function App(props) {
   useEffect(() => {
     const state = useFleetStore.getState();
-    if (state.fleets.length === 0) {
-      console.log('[App] 初始化车队数据，加载 mock 数据');
+    const storedVer = localStorage.getItem('fleet-version');
+    if (state.fleets.length === 0 || storedVer !== STORE_VERSION) {
+      console.log('[App] 初始化/升级车队数据，加载 mock 数据');
       useFleetStore.setState({ fleets: [...mockFleets] });
+      localStorage.setItem('fleet-version', STORE_VERSION);
     }
   }, []);
 

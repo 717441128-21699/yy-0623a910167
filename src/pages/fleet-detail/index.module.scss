@@ -109,6 +109,19 @@
         color: $color-text-primary;
         line-height: 1.6;
 
+        .initiatorRow {
+          display: flex;
+          align-items: center;
+        }
+
+        .initiatorAvatar {
+          width: 48rpx;
+          height: 48rpx;
+          border-radius: $radius-round;
+          margin-right: 12rpx;
+          background-color: $color-bg-tag;
+        }
+
         .price {
           color: $color-error;
           font-size: $font-size-lg;

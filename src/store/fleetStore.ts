@@ -103,10 +103,21 @@ export const useFleetStore = create<FleetState>()(
 
       addMember: (fleetId: string, form: SignupForm) => {
         const nowTs = Date.now();
-        const uid = 'u_' + generateId();
+        const uid = get().currentUserId;
+
+        const fleet = get().fleets.find((f) => f.id === fleetId);
+        let preferredRoleId: string | undefined;
+        if (fleet && form.rolePreference) {
+          const matched = fleet.roleSlots.find(
+            (r) => r.name === form.rolePreference
+          );
+          if (matched) {
+            preferredRoleId = matched.id;
+          }
+        }
 
         const newMember: FleetMember = {
-          id: generateId(),
+          id: 'm_' + generateId(),
           userId: uid,
           name: form.name,
           avatar: form.gender === 'female'
@@ -115,6 +126,7 @@ export const useFleetStore = create<FleetState>()(
           status: 'pending',
           gender: form.gender,
           rolePreference: form.rolePreference || undefined,
+          preferredRoleId,
           availableTime: form.availableTime,
           canCrossPlay: form.canCrossPlay,
           hasReadSeries: form.hasReadSeries,
@@ -200,8 +212,8 @@ export const useFleetStore = create<FleetState>()(
                 ? {
                     ...m,
                     status: 'confirmed' as MemberStatus,
-                    confirmed: true,
-                    assignedRoleId: roleId || m.assignedRoleId
+                    confirmed: false,
+                    assignedRoleId: roleId || m.preferredRoleId || m.assignedRoleId
                   }
                 : m
             );

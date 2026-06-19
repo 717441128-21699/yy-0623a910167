@@ -110,7 +110,7 @@ const MembersPage: React.FC = () => {
     return fleet.members.filter(
       (m) =>
         m.status === 'pending' &&
-        (!m.preferredRoleId || m.preferredRoleId === role.id)
+        m.preferredRoleId === role.id
     );
   };
 
@@ -118,7 +118,7 @@ const MembersPage: React.FC = () => {
     return fleet.members.filter(
       (m) =>
         m.status === 'waitlist' &&
-        (!m.preferredRoleId || m.preferredRoleId === role.id)
+        m.preferredRoleId === role.id
     );
   };
 
@@ -348,6 +348,30 @@ const MembersPage: React.FC = () => {
                 </View>
               );
             })}
+
+            {(() => {
+              const unassignedPending = fleet.members.filter(
+                (m) => m.status === 'pending' && !m.preferredRoleId
+              );
+              const unassignedWaitlist = fleet.members.filter(
+                (m) => m.status === 'waitlist' && !m.preferredRoleId
+              );
+              if (unassignedPending.length === 0 && unassignedWaitlist.length === 0) return null;
+              return (
+                <View className={styles.roleGroup}>
+                  <View className={styles.roleHeader}>
+                    <Text className={styles.roleName}>未选角色</Text>
+                    <Text className={classnames(styles.roleStatus, 'pending')}>
+                      {unassignedPending.length + unassignedWaitlist.length}人
+                    </Text>
+                  </View>
+                  <View className={styles.memberList}>
+                    {unassignedPending.map((p) => renderMemberItem(p, true, false))}
+                    {unassignedWaitlist.map((w) => renderMemberItem(w, true, false))}
+                  </View>
+                </View>
+              );
+            })()}
           </View>
         </View>
       )}

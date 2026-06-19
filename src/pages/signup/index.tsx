@@ -26,7 +26,6 @@ const SignupPage: React.FC = () => {
     const found = getFleetById(fleetId || '');
     if (found) {
       setFleet(found);
-      console.log('[Signup] 加载车队信息:', found.id, found.scriptName);
     }
   }, [fleetId, getFleetById]);
 
@@ -52,8 +51,6 @@ const SignupPage: React.FC = () => {
       remark
     });
 
-    console.log('[Signup] 提交报名:', { fleetId, name, gender, rolePreference });
-
     Taro.showModal({
       title: '报名成功',
       content: '已提交报名申请，请等待发起人确认。你可以在"我的车队-我参与的"中查看状态。',
@@ -72,6 +69,8 @@ const SignupPage: React.FC = () => {
       </View>
     );
   }
+
+  const safeRoleSlots = Array.isArray(fleet.roleSlots) ? fleet.roleSlots : [];
 
   return (
     <View className={styles.signupPage}>
@@ -145,10 +144,29 @@ const SignupPage: React.FC = () => {
 
         <View className={styles.formItem}>
           <Text className={styles.itemLabel}>意向角色</Text>
+          {safeRoleSlots.length > 0 && (
+            <View className={styles.roleOptions}>
+              {safeRoleSlots.map((role) => {
+                const isSelected = rolePreference === role.name;
+                return (
+                  <View
+                    key={role.id}
+                    className={classnames(styles.roleOption, isSelected && styles.roleActive)}
+                    onClick={() => setRolePreference(isSelected ? '' : role.name)}
+                  >
+                    <Text>{role.name}</Text>
+                    <Text className={styles.roleGenderHint}>
+                      {role.gender === 'male' ? '♂' : role.gender === 'female' ? '♀' : ''}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
           <View className={styles.inputWrapper}>
             <Input
               className={styles.input}
-              placeholder="想玩哪个角色？（选填）"
+              placeholder="或手动输入想玩的角色（选填）"
               value={rolePreference}
               onInput={(e) => setRolePreference(e.detail.value)}
             />
@@ -195,7 +213,7 @@ const SignupPage: React.FC = () => {
           </View>
           <View className={styles.tipItem}>
             <Text className={styles.tipIcon}>•</Text>
-            <Text>开车前24小时会发送确认提醒，请及时确认</Text>
+            <Text>发起人通过后，你需要在"我的"页面确认能否到场</Text>
           </View>
           <View className={styles.tipItem}>
             <Text className={styles.tipIcon}>•</Text>
