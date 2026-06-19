@@ -1,0 +1,120 @@
+@use '@/styles/variables.scss' as *;
+
+.fleetCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2rpx);
+  }
+
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-md;
+
+    .titleSection {
+      flex: 1;
+      margin-right: $spacing-md;
+
+      .scriptName {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+        @include text-ellipsis;
+        margin-bottom: 8rpx;
+      }
+
+      .tagsRow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8rpx;
+      }
+    }
+
+    .statusSection {
+      flex-shrink: 0;
+    }
+  }
+
+  .cardBody {
+    .infoRow {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12rpx;
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .infoLabel {
+        flex-shrink: 0;
+        width: 80rpx;
+        color: $color-text-tertiary;
+      }
+
+      .infoValue {
+        flex: 1;
+        @include text-ellipsis;
+      }
+
+      .price {
+        color: $color-error;
+        font-weight: $font-weight-semibold;
+      }
+    }
+  }
+
+  .cardFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1rpx solid $color-divider;
+
+    .initiatorInfo {
+      display: flex;
+      align-items: center;
+
+      .avatar {
+        width: 48rpx;
+        height: 48rpx;
+        border-radius: $radius-round;
+        margin-right: 12rpx;
+        background-color: $color-bg-tag;
+      }
+
+      .name {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        @include text-ellipsis;
+        max-width: 180rpx;
+      }
+    }
+
+    .slotsInfo {
+      font-size: $font-size-sm;
+      color: $color-text-tertiary;
+
+      .highlight {
+        color: $color-primary;
+        font-weight: $font-weight-semibold;
+      }
+    }
+  }
+
+  .progressSection {
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1rpx solid $color-divider;
+  }
+}

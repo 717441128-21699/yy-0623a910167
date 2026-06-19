@@ -1,0 +1,245 @@
+@use '@/styles/variables.scss' as *;
+
+.membersPage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 160rpx;
+
+  .summaryCard {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    margin: $spacing-md $spacing-lg;
+    padding: $spacing-lg;
+    border-radius: $radius-lg;
+    color: $color-text-white;
+
+    .scriptName {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      margin-bottom: 8rpx;
+    }
+
+    .fleetInfo {
+      font-size: $font-size-sm;
+      opacity: 0.85;
+      margin-bottom: $spacing-md;
+    }
+
+    .statsRow {
+      display: flex;
+      padding-top: $spacing-md;
+      border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+
+      .statItem {
+        flex: 1;
+        text-align: center;
+
+        .statNum {
+          font-size: $font-size-xl;
+          font-weight: $font-weight-bold;
+          margin-bottom: 4rpx;
+        }
+
+        .statLabel {
+          font-size: $font-size-xs;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .tabBar {
+    display: flex;
+    background-color: $color-bg-card;
+    padding: $spacing-sm $spacing-lg;
+    gap: $spacing-sm;
+
+    .tabItem {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: $spacing-sm 0;
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      position: relative;
+      transition: all $transition-fast;
+      border-radius: $radius-md;
+
+      &.active {
+        background-color: $color-primary-bg;
+        color: $color-primary;
+        font-weight: $font-weight-medium;
+      }
+
+      .tabCount {
+        margin-left: 6rpx;
+        font-size: $font-size-xs;
+      }
+    }
+  }
+
+  .memberList {
+    padding: $spacing-md $spacing-lg;
+
+    .memberCard {
+      background-color: $color-bg-card;
+      border-radius: $radius-lg;
+      padding: $spacing-lg;
+      margin-bottom: $spacing-md;
+      box-shadow: $shadow-card;
+
+      .memberHeader {
+        display: flex;
+        align-items: center;
+        margin-bottom: $spacing-md;
+
+        .memberAvatar {
+          width: 88rpx;
+          height: 88rpx;
+          border-radius: $radius-round;
+          margin-right: $spacing-md;
+          background-color: $color-bg-tag;
+        }
+
+        .memberInfo {
+          flex: 1;
+
+          .memberName {
+            font-size: $font-size-lg;
+            font-weight: $font-weight-semibold;
+            color: $color-text-primary;
+            margin-bottom: 4rpx;
+          }
+
+          .memberTags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8rpx;
+
+            .tag {
+              font-size: $font-size-xs;
+              padding: 2rpx 10rpx;
+              border-radius: $radius-xs;
+              background-color: $color-bg-tag;
+              color: $color-text-tertiary;
+            }
+          }
+        }
+
+        .statusBadge {
+          flex-shrink: 0;
+        }
+      }
+
+      .memberDetail {
+        background-color: $color-bg-page;
+        border-radius: $radius-md;
+        padding: $spacing-md;
+        margin-bottom: $spacing-md;
+
+        .detailRow {
+          display: flex;
+          margin-bottom: 8rpx;
+          font-size: $font-size-sm;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .detailLabel {
+            width: 140rpx;
+            flex-shrink: 0;
+            color: $color-text-tertiary;
+          }
+
+          .detailValue {
+            flex: 1;
+            color: $color-text-secondary;
+          }
+        }
+      }
+
+      .actionButtons {
+        display: flex;
+        gap: $spacing-sm;
+
+        .actionBtn {
+          @include button-reset;
+          flex: 1;
+          height: 64rpx;
+          border-radius: $radius-button;
+          font-size: $font-size-sm;
+          font-weight: $font-weight-medium;
+          transition: all $transition-fast;
+
+          &.secondary {
+            background-color: $color-bg-tag;
+            color: $color-text-secondary;
+          }
+
+          &.primary {
+            background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+            color: $color-text-white;
+          }
+
+          &.danger {
+            background-color: rgba(245, 63, 63, 0.1);
+            color: $color-error;
+          }
+
+          &:active {
+            opacity: 0.9;
+            transform: scale(0.98);
+          }
+        }
+      }
+    }
+  }
+
+  .emptySection {
+    padding: $spacing-xl * 2 $spacing-lg;
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: $spacing-md $spacing-lg;
+    padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+    background-color: $color-bg-card;
+    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: $spacing-md;
+
+    .remindBtn {
+      @include button-reset;
+      flex: 1;
+      height: $button-height-lg;
+      border-radius: $radius-button;
+      background-color: $color-warning;
+      color: $color-text-white;
+      font-size: $font-size-md;
+      font-weight: $font-weight-semibold;
+
+      &:active {
+        opacity: 0.9;
+      }
+    }
+
+    .confirmAllBtn {
+      @include button-reset;
+      flex: 1;
+      height: $button-height-lg;
+      border-radius: $radius-button;
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      color: $color-text-white;
+      font-size: $font-size-md;
+      font-weight: $font-weight-semibold;
+
+      &:active {
+        opacity: 0.9;
+      }
+    }
+  }
+}

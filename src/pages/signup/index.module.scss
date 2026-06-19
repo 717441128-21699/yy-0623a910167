@@ -1,0 +1,207 @@
+@use '@/styles/variables.scss' as *;
+
+.signupPage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 180rpx;
+
+  .fleetInfo {
+    background-color: $color-bg-card;
+    margin: $spacing-md $spacing-lg;
+    padding: $spacing-lg;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+
+    .fleetDetail {
+      flex: 1;
+
+      .scriptName {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+        margin-bottom: 8rpx;
+      }
+
+      .fleetMeta {
+        font-size: $font-size-sm;
+        color: $color-text-tertiary;
+      }
+    }
+
+    .fleetPrice {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-error;
+    }
+  }
+
+  .formSection {
+    background-color: $color-bg-card;
+    margin: $spacing-md $spacing-lg;
+    padding: $spacing-lg;
+    border-radius: $radius-lg;
+
+    .sectionTitle {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+      margin-bottom: $spacing-md;
+    }
+
+    .formItem {
+      margin-bottom: $spacing-lg;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .itemLabel {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        margin-bottom: $spacing-sm;
+
+        .required {
+          color: $color-error;
+          margin-right: 4rpx;
+        }
+      }
+
+      .inputWrapper {
+        display: flex;
+        align-items: center;
+        height: 80rpx;
+        padding: 0 $spacing-md;
+        background-color: $color-bg-page;
+        border-radius: $radius-md;
+
+        .input {
+          flex: 1;
+          font-size: $font-size-md;
+          color: $color-text-primary;
+        }
+      }
+
+      .genderOptions {
+        display: flex;
+        gap: $spacing-md;
+
+        .genderOption {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 80rpx;
+          border-radius: $radius-md;
+          background-color: $color-bg-page;
+          font-size: $font-size-md;
+          color: $color-text-secondary;
+          transition: all $transition-fast;
+
+          .genderIcon {
+            margin-right: 8rpx;
+            font-size: $font-size-lg;
+          }
+
+          &.active {
+            background-color: $color-primary-bg;
+            color: $color-primary;
+            font-weight: $font-weight-medium;
+          }
+        }
+      }
+
+      .switchItem {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: $spacing-md 0;
+        border-bottom: 1rpx solid $color-divider;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .switchLabel {
+          font-size: $font-size-md;
+          color: $color-text-primary;
+
+          .switchDesc {
+            font-size: $font-size-xs;
+            color: $color-text-tertiary;
+            margin-left: 8rpx;
+          }
+        }
+      }
+
+      .textarea {
+        width: 100%;
+        min-height: 160rpx;
+        padding: $spacing-md;
+        background-color: $color-bg-page;
+        border-radius: $radius-md;
+        font-size: $font-size-md;
+        color: $color-text-primary;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  .tipsSection {
+    margin: $spacing-lg;
+
+    .tipsTitle {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-sm;
+    }
+
+    .tipsList {
+      .tipItem {
+        display: flex;
+        align-items: flex-start;
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+        line-height: 1.6;
+        margin-bottom: 8rpx;
+
+        .tipIcon {
+          margin-right: 8rpx;
+          flex-shrink: 0;
+        }
+      }
+    }
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: $spacing-md $spacing-lg;
+    padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+    background-color: $color-bg-card;
+    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+
+    .submitBtn {
+      @include button-reset;
+      width: 100%;
+      height: $button-height-lg;
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      border-radius: $radius-button;
+      color: $color-text-white;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      transition: all $transition-fast;
+
+      &:active {
+        opacity: 0.9;
+        transform: scale(0.98);
+      }
+
+      &.disabled {
+        opacity: 0.5;
+      }
+    }
+  }
+}

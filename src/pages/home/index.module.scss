@@ -1,0 +1,119 @@
+@use '@/styles/variables.scss' as *;
+
+.homePage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+
+  .header {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    padding: $spacing-lg;
+    padding-top: 48rpx;
+
+    .cityRow {
+      display: flex;
+      align-items: center;
+      margin-bottom: $spacing-md;
+
+      .cityBtn {
+        display: flex;
+        align-items: center;
+        color: $color-text-white;
+        font-size: $font-size-md;
+        font-weight: $font-weight-medium;
+
+        .cityName {
+          margin-right: 8rpx;
+        }
+
+        .arrow {
+          font-size: $font-size-sm;
+          opacity: 0.8;
+        }
+      }
+    }
+
+    .searchBar {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: $radius-button;
+      padding: 0 $spacing-lg;
+      height: 72rpx;
+
+      .searchIcon {
+        font-size: $font-size-lg;
+        margin-right: 12rpx;
+        opacity: 0.8;
+      }
+
+      .searchInput {
+        flex: 1;
+        color: $color-text-white;
+        font-size: $font-size-md;
+        background: transparent;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.6);
+        }
+      }
+    }
+  }
+
+  .filterSection {
+    background-color: $color-bg-card;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1rpx solid $color-divider;
+
+    .filterScroll {
+      white-space: nowrap;
+    }
+
+    .filterTag {
+      display: inline-block;
+      padding: 12rpx 28rpx;
+      margin-right: 16rpx;
+      border-radius: $radius-button;
+      font-size: $font-size-sm;
+      background-color: $color-bg-tag;
+      color: $color-text-secondary;
+      transition: all $transition-fast;
+
+      &.active {
+        background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+        color: $color-text-white;
+        font-weight: $font-weight-medium;
+      }
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .listSection {
+    padding: $spacing-md $spacing-lg;
+    padding-bottom: 120rpx;
+  }
+
+  .sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+
+    .sectionTitle {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+    }
+
+    .sectionCount {
+      font-size: $font-size-sm;
+      color: $color-text-tertiary;
+    }
+  }
+
+  .cityPicker {
+    display: none;
+  }
+}

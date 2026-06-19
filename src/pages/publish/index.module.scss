@@ -1,0 +1,278 @@
+@use '@/styles/variables.scss' as *;
+
+.publishPage {
+  min-height: 100vh;
+  background-color: $color-bg-page;
+  padding-bottom: 180rpx;
+
+  .formSection {
+    background-color: $color-bg-card;
+    margin-bottom: $spacing-md;
+
+    .sectionTitle {
+      padding: $spacing-lg $spacing-lg $spacing-md;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+    }
+
+    .formItem {
+      display: flex;
+      align-items: center;
+      padding: 0 $spacing-lg;
+      min-height: 100rpx;
+      border-bottom: 1rpx solid $color-divider;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .itemLabel {
+        width: 160rpx;
+        flex-shrink: 0;
+        font-size: $font-size-md;
+        color: $color-text-primary;
+      }
+
+      .itemContent {
+        flex: 1;
+        display: flex;
+        align-items: center;
+
+        .input {
+          flex: 1;
+          font-size: $font-size-md;
+          color: $color-text-primary;
+          text-align: right;
+        }
+
+        .placeholder {
+          color: $color-text-tertiary;
+        }
+
+        .pickerValue {
+          font-size: $font-size-md;
+          color: $color-text-primary;
+        }
+
+        .arrow {
+          margin-left: 8rpx;
+          color: $color-text-tertiary;
+          font-size: $font-size-sm;
+        }
+
+        .priceRange {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex: 1;
+
+          .priceInput {
+            width: 120rpx;
+            text-align: right;
+            font-size: $font-size-md;
+            color: $color-text-primary;
+          }
+
+          .priceSeparator {
+            margin: 0 12rpx;
+            color: $color-text-tertiary;
+          }
+
+          .priceUnit {
+            font-size: $font-size-sm;
+            color: $color-text-tertiary;
+            margin-left: 4rpx;
+          }
+        }
+
+        .slotPicker {
+          display: flex;
+          align-items: center;
+
+          .slotBtn {
+            width: 56rpx;
+            height: 56rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: $radius-sm;
+            background-color: $color-bg-tag;
+            font-size: $font-size-lg;
+            color: $color-text-secondary;
+
+            &:active {
+              background-color: $color-bg-hover;
+            }
+
+            &.disabled {
+              opacity: 0.4;
+            }
+          }
+
+          .slotValue {
+            width: 80rpx;
+            text-align: center;
+            font-size: $font-size-lg;
+            font-weight: $font-weight-semibold;
+            color: $color-primary;
+          }
+        }
+      }
+    }
+
+    .textareaItem {
+      padding: $spacing-md $spacing-lg $spacing-lg;
+      border-bottom: none;
+
+      .itemLabel {
+        margin-bottom: $spacing-sm;
+      }
+
+      .textarea {
+        width: 100%;
+        min-height: 160rpx;
+        padding: $spacing-md;
+        background-color: $color-bg-page;
+        border-radius: $radius-md;
+        font-size: $font-size-md;
+        color: $color-text-primary;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  .typeSection {
+    .typeGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16rpx;
+      padding: 0 $spacing-lg $spacing-lg;
+    }
+
+    .typeItem {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: calc(33.33% - 12rpx);
+      height: 120rpx;
+      border-radius: $radius-md;
+      background-color: $color-bg-tag;
+      transition: all $transition-fast;
+
+      .typeIcon {
+        font-size: 40rpx;
+        margin-bottom: 8rpx;
+      }
+
+      .typeName {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+      }
+
+      &.active {
+        background: linear-gradient(135deg, $color-primary-bg 0%, rgba(123, 97, 255, 0.15) 100%);
+        border: 2rpx solid $color-primary;
+
+        .typeName {
+          color: $color-primary;
+          font-weight: $font-weight-medium;
+        }
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+  }
+
+  .tagsSection {
+    .tagsContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16rpx;
+      padding: 0 $spacing-lg $spacing-lg;
+    }
+
+    .tagItem {
+      padding: 12rpx 24rpx;
+      border-radius: $radius-button;
+      background-color: $color-bg-tag;
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      transition: all $transition-fast;
+
+      &.active {
+        background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+        color: $color-text-white;
+        font-weight: $font-weight-medium;
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+  }
+
+  .switchSection {
+    .switchItem {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: $spacing-md $spacing-lg;
+      border-bottom: 1rpx solid $color-divider;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .switchLabel {
+        display: flex;
+        align-items: center;
+
+        .switchIcon {
+          font-size: 32rpx;
+          margin-right: 12rpx;
+        }
+
+        .switchText {
+          font-size: $font-size-md;
+          color: $color-text-primary;
+        }
+      }
+    }
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: $spacing-md $spacing-lg;
+    padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+    background-color: $color-bg-card;
+    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+
+    .submitBtn {
+      @include button-reset;
+      width: 100%;
+      height: $button-height-lg;
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      border-radius: $radius-button;
+      color: $color-text-white;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      transition: all $transition-fast;
+
+      &:active {
+        opacity: 0.9;
+        transform: scale(0.98);
+      }
+
+      &.disabled {
+        opacity: 0.5;
+      }
+    }
+  }
+}

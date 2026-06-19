@@ -1,0 +1,43 @@
+// ============================================
+// 主题配色变量（剧本杀车队招募 App）
+// ============================================
+
+// 品牌主题色：紫罗兰 - 神秘悬疑感
+$color-primary: #7B61FF;
+$color-primary-light: #9B8BFF;
+$color-primary-dark: #5A45E0;
+$color-primary-bg: rgba(123, 97, 255, 0.08);
+
+// 辅助色 - 剧本类型相关
+$color-emotion: #FF6B9D;      // 情感沉浸 - 玫红
+$color-fun: #FFB020;          // 欢乐机制 - 琥珀
+$color-hardcore: #00C4B4;     // 硬核推理 - 青绿
+$color-terror: #2D3436;       // 恐怖惊悚 - 深灰
+
+// 功能色
+$color-success: #00B42A;
+$color-warning: #FF7D00;
+$color-error: #F53F3F;
+$color-info: #7B61FF;
+
+// 背景色
+$color-bg-page: #F7F8FA;
+$color-bg-card: #FFFFFF;
+$color-bg-hover: #F2F3F5;
+$color-bg-tag: #F2F3F5;
+
+// 文本色
+$color-text-primary: #1D2129;
+$color-text-secondary: #4E5969;
+$color-text-tertiary: #86909C;
+$color-text-disabled: #C9CDD4;
+$color-text-white: #FFFFFF;
+
+// 边框色
+$color-border: #E5E6EB;
+$color-divider: #F2F3F5;
+
+// 状态色
+$color-status-confirmed: #00B42A;   // 已上车
+$color-status-pending: #FF7D00;     // 待确认
+$color-status-waitlist: #86909C;    // 候补

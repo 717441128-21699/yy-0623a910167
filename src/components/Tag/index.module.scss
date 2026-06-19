@@ -1,0 +1,57 @@
+@use '@/styles/variables.scss' as *;
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-sm;
+  font-size: $font-size-xs;
+  line-height: 1.4;
+  white-space: nowrap;
+
+  &.default {
+    background-color: $color-bg-tag;
+    color: $color-text-secondary;
+  }
+
+  &.primary {
+    background-color: $color-primary-bg;
+    color: $color-primary;
+  }
+
+  &.hardcore {
+    background-color: rgba(0, 196, 180, 0.1);
+    color: $color-hardcore;
+  }
+
+  &.emotion {
+    background-color: rgba(255, 107, 157, 0.1);
+    color: $color-emotion;
+  }
+
+  &.fun {
+    background-color: rgba(255, 176, 32, 0.12);
+    color: $color-fun;
+  }
+
+  &.terror {
+    background-color: rgba(45, 52, 54, 0.08);
+    color: $color-terror;
+  }
+
+  &.mechanism {
+    background-color: $color-primary-bg;
+    color: $color-primary;
+  }
+
+  &.exclusive {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+  }
+
+  &.first {
+    background: linear-gradient(135deg, $color-error 0%, #FF8A80 100%);
+    color: $color-text-white;
+  }
+}
