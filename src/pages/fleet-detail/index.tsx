@@ -1,33 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import { View, Text } from '@tarojs/components';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
 import StatusBadge from '@/components/StatusBadge';
-import { mockFleets } from '@/data/mockFleets';
-import { Fleet, FleetMember, ScriptType } from '@/types/fleet';
+import { useFleetStore } from '@/store/fleetStore';
+import { Fleet, FleetMember, RoleSlot } from '@/types/fleet';
 
-const typeLabelMap: Record<ScriptType, string> = {
-  hardcore: '硬核推理',
-  emotion: '情感沉浸',
-  fun: '欢乐机制',
-  terror: '恐怖惊悚',
-  mechanism: '机制阵营',
-  other: '其他'
+const getGenderLabel = (gender?: string) => {
+  if (gender === 'male') return '♂ 男';
+  if (gender === 'female') return '♀ 女';
+  return '不限';
+};
+
+const getGenderClass = (gender?: string) => {
+  if (gender === 'male') return 'male';
+  if (gender === 'female') return 'female';
+  return 'any';
 };
 
 const FleetDetailPage: React.FC = () => {
   const router = useRouter();
   const fleetId = router.params.id;
+  const getFleetById = useFleetStore((s) => s.getFleetById);
+  const currentUserId = useFleetStore((s) => s.currentUserId);
+
   const [fleet, setFleet] = useState<Fleet | null>(null);
 
-  useEffect(() => {
-    const found = mockFleets.find(f => f.id === fleetId);
+  const loadFleet = () => {
+    const found = getFleetById(fleetId || '');
     if (found) {
-      setFleet(found);
+      setFleet({ ...found });
+      console.log('[FleetDetail] 加载车队:', found.id, '成员数:', found.members.length);
     }
-    console.log('[FleetDetail] 加载车队详情:', fleetId);
-  }, [fleetId]);
+  };
+
+  useEffect(() => {
+    loadFleet();
+  }, [fleetId, getFleetById]);
+
+  useDidShow(() => {
+    loadFleet();
+  });
+
+  const handleSignup = () => {
+    if (!fleet) return;
+    Taro.navigateTo({ url: `/pages/signup/index?id=${fleet.id}` });
+  };
+
+  const handleManageMembers = () => {
+    if (!fleet) return;
+    Taro.navigateTo({ url: `/pages/members/index?id=${fleet.id}` });
+  };
+
+  const handleContact = () => {
+    Taro.showToast({ title: '复制联系方式成功', icon: 'success' });
+  };
 
   if (!fleet) {
     return (
@@ -37,200 +65,278 @@ const FleetDetailPage: React.FC = () => {
     );
   }
 
-  const confirmedMembers = fleet.members.filter(m => m.status === 'confirmed');
-  const pendingMembers = fleet.members.filter(m => m.status === 'pending');
-  const waitlistMembers = fleet.members.filter(m => m.status === 'waitlist');
-  const progressPercent = (fleet.filledSlots / fleet.totalSlots) * 100;
-  const isFull = fleet.filledSlots >= fleet.totalSlots;
+  const confirmedCount = fleet.members.filter((m) => m.status === 'confirmed').length;
+  const pendingCount = fleet.members.filter((m) => m.status === 'pending').length;
+  const waitlistCount = fleet.members.filter((m) => m.status === 'waitlist').length;
+  const progress = fleet.totalPlayers > 0 ? Math.min((confirmedCount / fleet.totalPlayers) * 100, 100) : 0;
 
-  const handleSignup = () => {
-    if (isFull) {
-      Taro.showToast({
-        title: '车队已满，可候补',
-        icon: 'none'
-      });
-    }
-    Taro.navigateTo({
-      url: `/pages/signup/index?id=${fleet.id}`
-    });
+  const isInitiator = fleet.initiatorId === currentUserId;
+  const hasJoined = fleet.members.some((m) => m.userId === currentUserId);
+  const canSignup = !isInitiator && !hasJoined && fleet.neededPlayers > 0;
+
+  const getMemberForRole = (role: RoleSlot): FleetMember | null => {
+    const assignment = fleet.roleAssignments.find((a) => a.roleId === role.id);
+    if (!assignment || !assignment.memberId) return null;
+    return fleet.members.find((m) => m.id === assignment.memberId) || null;
   };
 
-  const handleManageMembers = () => {
-    Taro.navigateTo({
-      url: `/pages/members/index?id=${fleet.id}`
-    });
+  const getPendingForRole = (role: RoleSlot): FleetMember[] => {
+    return fleet.members.filter(
+      (m) =>
+        m.status === 'pending' &&
+        (!m.preferredRoleId || m.preferredRoleId === role.id)
+    );
   };
-
-  const handleContact = () => {
-    Taro.showToast({
-      title: '联系发起人功能开发中',
-      icon: 'none'
-    });
-  };
-
-  const displayMembers = fleet.members.slice(0, 5);
 
   return (
     <View className={styles.fleetDetailPage}>
-      <ScrollView scrollY style={{ height: '100vh' }}>
-        <View className={styles.headerCard}>
-          <Text className={styles.scriptName}>{fleet.scriptName}</Text>
-          <View className={styles.tagsRow}>
-            {fleet.isExclusive && (
-              <View className={classnames(styles.tag, styles.exclusiveTag)}>
-                <Text>独家本</Text>
-              </View>
-            )}
-            {fleet.isFirstPlay && (
-              <View className={classnames(styles.tag, styles.exclusiveTag)}>
-                <Text>首发</Text>
-              </View>
-            )}
-            <View className={styles.tag}>
-              <Text>{typeLabelMap[fleet.scriptType]}</Text>
-            </View>
+      <View className={styles.headerCard}>
+        <Text className={styles.scriptName}>{fleet.scriptName}</Text>
+        <View className={styles.tagsRow}>
+          <Text className={classnames(styles.tag, styles.exclusiveTag)}>限定城限</Text>
+          <Text className={styles.tag}>{fleet.typeLabel}</Text>
+          {fleet.difficulty && <Text className={styles.tag}>{fleet.difficulty}</Text>}
+        </View>
+        <View className={styles.infoGrid}>
+          <View className={styles.infoItem}>
+            <Text className={styles.infoIcon}>📅</Text>
+            <Text className={styles.infoText}>{fleet.date} {fleet.time}</Text>
           </View>
-          <View className={styles.infoGrid}>
-            <View className={styles.infoItem}>
-              <Text className={styles.infoIcon}>📍</Text>
-              <Text className={styles.infoText}>{fleet.city} · {fleet.store}</Text>
-            </View>
-            <View className={styles.infoItem}>
-              <Text className={styles.infoIcon}>🕐</Text>
-              <Text className={styles.infoText}>{fleet.date} {fleet.time}</Text>
-            </View>
+          <View className={styles.infoItem}>
+            <Text className={styles.infoIcon}>📍</Text>
+            <Text className={styles.infoText}>{fleet.city} {fleet.store}</Text>
           </View>
         </View>
+      </View>
 
-        <View className={classnames(styles.section, styles.progressSection)}>
-          <View className={styles.progressHeader}>
-            <Text className={styles.progressTitle}>成团进度</Text>
-            <Text className={styles.progressNum}>
-              {fleet.filledSlots}<Text className={styles.total}>/{fleet.totalSlots}人</Text>
-            </Text>
-          </View>
-          <View className={styles.progressBar}>
-            <View className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
-          </View>
-          <View className={styles.statusBreakdown}>
-            <View className={styles.statusItem}>
-              <View className={classnames(styles.statusDot, styles.confirmed)} />
-              <Text className={styles.statusText}>
-                已上车<Text className={styles.statusCount}>{confirmedMembers.length}</Text>
-              </Text>
-            </View>
-            <View className={styles.statusItem}>
-              <View className={classnames(styles.statusDot, styles.pending)} />
-              <Text className={styles.statusText}>
-                待确认<Text className={styles.statusCount}>{pendingMembers.length}</Text>
-              </Text>
-            </View>
-            <View className={styles.statusItem}>
-              <View className={classnames(styles.statusDot, styles.waitlist)} />
-              <Text className={styles.statusText}>
-                候补<Text className={styles.statusCount}>{waitlistMembers.length}</Text>
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View className={classnames(styles.section, styles.infoSection)}>
-          <Text className={styles.sectionTitle}>
-            <Text className={styles.titleIcon}>📋</Text>
-            基本信息
-          </Text>
+      <View className={styles.section}>
+        <Text className={styles.sectionTitle}>
+          <Text className={styles.titleIcon}>📋</Text>
+          基本信息
+        </Text>
+        <View className={styles.infoSection}>
           <View className={styles.infoRow}>
             <Text className={styles.infoLabel}>发起人</Text>
-            <View style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-              <Image
-                src={fleet.initiator.avatar}
-                style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
-                mode="aspectFill"
-              />
-              <Text style={{ fontSize: 28, color: '#1D2129' }}>{fleet.initiator.name}</Text>
-            </View>
+            <Text className={styles.infoValue}>{fleet.initiator}</Text>
           </View>
           <View className={styles.infoRow}>
             <Text className={styles.infoLabel}>车费</Text>
             <Text className={styles.infoValue}>
               <Text className={styles.price}>¥{fleet.priceMin}-{fleet.priceMax}</Text>
-              <Text style={{ marginLeft: 8, color: '#86909C' }}>/人</Text>
+              <Text> /人，包含独家本费</Text>
             </Text>
           </View>
           <View className={styles.infoRow}>
             <Text className={styles.infoLabel}>剧本标签</Text>
-            <View style={{ flex: 1, flexWrap: 'wrap', display: 'flex', gap: 8 }}>
-              {fleet.tags.map(tag => (
-                <Text
-                  key={tag}
-                  style={{
-                    fontSize: 22,
-                    padding: '4px 12px',
-                    borderRadius: 4,
-                    backgroundColor: '#F2F3F5',
-                    color: '#4E5969'
-                  }}
-                >
-                  {tag}
-                </Text>
+            <View className={styles.tagList}>
+              {fleet.tags.map((tag) => (
+                <Text key={tag} className={styles.miniTag}>{tag}</Text>
               ))}
             </View>
           </View>
-          <View className={styles.infoRow}>
-            <Text className={styles.infoLabel}>发布时间</Text>
-            <Text className={styles.infoValue}>{fleet.createdAt}</Text>
+        </View>
+      </View>
+
+      <View className={styles.section}>
+        <Text className={styles.sectionTitle}>
+          <Text className={styles.titleIcon}>📊</Text>
+          成团进度
+          <Text className={styles.titleCount}>还差 {fleet.neededPlayers} 人</Text>
+        </Text>
+        <View className={styles.progressSection}>
+          <View className={styles.progressHeader}>
+            <Text className={styles.progressTitle}>已确认 / 总人数</Text>
+            <Text className={styles.progressNum}>
+              {confirmedCount}<Text className={styles.total}> / {fleet.totalPlayers}</Text>
+            </Text>
+          </View>
+          <View className={styles.progressBar}>
+            <View className={styles.progressFill} style={{ width: `${progress}%` }} />
+          </View>
+          <View className={styles.statusBreakdown}>
+            <View className={styles.statusItem}>
+              <View className={classnames(styles.statusDot, 'confirmed')} />
+              <Text className={styles.statusText}>
+                已上车<Text className={styles.statusCount}>{confirmedCount}</Text>
+              </Text>
+            </View>
+            <View className={styles.statusItem}>
+              <View className={classnames(styles.statusDot, 'pending')} />
+              <Text className={styles.statusText}>
+                待确认<Text className={styles.statusCount}>{pendingCount}</Text>
+              </Text>
+            </View>
+            <View className={styles.statusItem}>
+              <View className={classnames(styles.statusDot, 'waitlist')} />
+              <Text className={styles.statusText}>
+                候补<Text className={styles.statusCount}>{waitlistCount}</Text>
+              </Text>
+            </View>
           </View>
         </View>
+      </View>
 
-        <View className={classnames(styles.section, styles.membersSection)}>
+      {fleet.roleSlots.length > 0 && (
+        <View className={styles.section}>
           <Text className={styles.sectionTitle}>
-            <Text className={styles.titleIcon}>👥</Text>
-            车队成员
+            <Text className={styles.titleIcon}>🎭</Text>
+            角色位分布
+            <Text className={styles.titleCount}>
+              {fleet.roleSlots.filter((r) => getMemberForRole(r)?.status === 'confirmed').length}
+              /{fleet.roleSlots.length} 已就位
+            </Text>
           </Text>
-          <View className={styles.membersList}>
-            {displayMembers.map(member => (
-              <View key={member.id} className={styles.memberItem}>
-                <Image
-                  className={styles.memberAvatar}
-                  src={member.avatar}
-                  mode="aspectFill"
-                />
-                <View className={styles.memberInfo}>
-                  <Text className={styles.memberName}>{member.name}</Text>
-                  <Text className={styles.memberDesc}>
-                    {member.rolePreference ? `意向角色：${member.rolePreference}` : '角色意向：未选择'}
+          <View className={styles.rolesSection}>
+            <View className={styles.roleGrid}>
+              {fleet.roleSlots.map((role) => {
+                const member = getMemberForRole(role);
+                const pendings = getPendingForRole(role);
+                const hasConfirmed = member?.status === 'confirmed';
+                const hasPending = !hasConfirmed && (pendings.length > 0 || member?.status === 'pending');
+
+                return (
+                  <View
+                    key={role.id}
+                    className={classnames(
+                      styles.roleCard,
+                      hasConfirmed && styles.hasMember,
+                      hasPending && !hasConfirmed && styles.pending,
+                      !member && !hasPending && styles.empty
+                    )}
+                  >
+                    <View className={styles.roleHeader}>
+                      <Text className={styles.roleName}>{role.name}</Text>
+                      <Text className={classnames(styles.roleGender, getGenderClass(role.gender))}>
+                        {getGenderLabel(role.gender)}
+                      </Text>
+                    </View>
+
+                    {hasConfirmed && member && (
+                      <View className={styles.roleMember}>
+                        <View className={styles.memberAvatar} />
+                        <View className={styles.memberInfo}>
+                          <Text className={styles.memberName}>{member.name}</Text>
+                          <Text className={classnames(styles.memberStatus, 'confirmed')}>已确认</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {member?.status === 'pending' && (
+                      <View className={styles.roleMember}>
+                        <View className={styles.memberAvatar} />
+                        <View className={styles.memberInfo}>
+                          <Text className={styles.memberName}>{member.name}</Text>
+                          <Text className={classnames(styles.memberStatus, 'pending')}>待确认</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {!member && pendings.length > 0 && (
+                      <View className={styles.roleMember}>
+                        <View className={styles.memberInfo}>
+                          <Text className={styles.memberName}>{pendings[0].name}</Text>
+                          <Text className={classnames(styles.memberStatus, 'pending')}>
+                            {pendings.length > 1 ? `待确认(等${pendings.length}人)` : '待确认'}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {!member && pendings.length === 0 && (
+                      <View className={styles.emptyRole}>
+                        <Text className={styles.plusIcon}>+</Text>
+                        <Text>虚位以待</Text>
+                      </View>
+                    )}
+
+                    {member?.availableTime && (
+                      <Text className={styles.roleMeta}>到店：{member.availableTime}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      )}
+
+      <View className={styles.section}>
+        <Text className={styles.sectionTitle}>
+          <Text className={styles.titleIcon}>👥</Text>
+          成员列表
+          <Text className={styles.titleCount}>{fleet.members.length}人</Text>
+        </Text>
+        <View className={styles.membersSection}>
+          {fleet.members.map((member) => (
+            <View key={member.id} className={styles.memberItem}>
+              <View className={styles.memberAvatar} />
+              <View className={styles.memberInfo}>
+                <Text className={styles.memberName}>
+                  {member.name}
+                  {member.userId === fleet.initiatorId && <Text>（发起人）</Text>}
+                </Text>
+                <View className={styles.memberTags}>
+                  <Text className={styles.miniTag}>
+                    {member.gender === 'male' ? '♂ 男' : member.gender === 'female' ? '♀ 女' : ''}
                   </Text>
+                  {member.canCrossPlay && <Text className={styles.miniTag}>可反串</Text>}
+                  {member.hasReadSeries && <Text className={styles.miniTag}>已读同系列</Text>}
+                  {member.assignedRoleId && (() => {
+                    const role = fleet.roleSlots.find((r) => r.id === member.assignedRoleId);
+                    return role ? <Text className={styles.miniTag}>{role.name}</Text> : null;
+                  })()}
                 </View>
-                <StatusBadge status={member.status} className={styles.memberBadge} />
+                <Text className={styles.memberMeta}>
+                  {member.availableTime && `可到:${member.availableTime}`}
+                  {member.rolePreference && member.availableTime && ` · `}
+                  {member.rolePreference && `意向:${member.rolePreference}`}
+                </Text>
               </View>
-            ))}
-            {fleet.members.length > 5 && (
-              <View className={styles.moreBtn} onClick={handleManageMembers}>
-                <Text>查看全部 {fleet.members.length} 位成员 ›</Text>
+              <View className={styles.memberBadge}>
+                <StatusBadge status={member.status} />
               </View>
-            )}
-          </View>
-        </View>
+            </View>
+          ))}
 
-        <View className={classnames(styles.section, styles.descSection)}>
-          <Text className={styles.sectionTitle}>
-            <Text className={styles.titleIcon}>📝</Text>
-            车队描述
-          </Text>
+          {isInitiator && (
+            <View className={styles.moreBtn} onClick={handleManageMembers}>
+              <Text>进入成员管理 ›</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View className={styles.section}>
+        <Text className={styles.sectionTitle}>
+          <Text className={styles.titleIcon}>📝</Text>
+          车队说明
+        </Text>
+        <View className={styles.descSection}>
           <Text className={styles.descText}>{fleet.description}</Text>
         </View>
-      </ScrollView>
+      </View>
 
       <View className={styles.footer}>
         <View className={styles.secondaryBtn} onClick={handleContact}>
           <Text>联系发起人</Text>
         </View>
-        <View
-          className={classnames(styles.primaryBtn, isFull && styles.disabled)}
-          onClick={handleSignup}
-        >
-          <Text>{isFull ? '已满员，可候补' : '立即报名'}</Text>
-        </View>
+        {isInitiator ? (
+          <View className={styles.primaryBtn} onClick={handleManageMembers}>
+            <Text>成员管理</Text>
+          </View>
+        ) : canSignup ? (
+          <View className={styles.primaryBtn} onClick={handleSignup}>
+            <Text>立即报名（还差{fleet.neededPlayers}人）</Text>
+          </View>
+        ) : hasJoined ? (
+          <View className={classnames(styles.primaryBtn, styles.disabled)}>
+            <Text>已加入车队</Text>
+          </View>
+        ) : (
+          <View className={classnames(styles.primaryBtn, styles.disabled)}>
+            <Text>车队已满</Text>
+          </View>
+        )}
       </View>
     </View>
   );

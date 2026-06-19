@@ -244,6 +244,103 @@
     }
   }
 
+  .roleList {
+    padding: 0 $spacing-lg $spacing-lg;
+
+    .roleItem {
+      display: flex;
+      align-items: center;
+      padding: $spacing-sm 0;
+      border-bottom: 1rpx solid $color-divider;
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+
+      .roleIndex {
+        width: 48rpx;
+        height: 48rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $radius-round;
+        background-color: $color-primary-bg;
+        color: $color-primary;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        margin-right: $spacing-sm;
+      }
+
+      .roleNameInput {
+        flex: 1;
+        height: 64rpx;
+        padding: 0 $spacing-md;
+        background-color: $color-bg-page;
+        border-radius: $radius-md;
+        font-size: $font-size-sm;
+        color: $color-text-primary;
+        margin-right: $spacing-sm;
+      }
+
+      .roleGenderBtn {
+        width: 72rpx;
+        height: 64rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $radius-md;
+        background-color: $color-bg-tag;
+        color: $color-text-secondary;
+        font-size: $font-size-lg;
+        margin-right: $spacing-sm;
+        transition: all $transition-fast;
+
+        &.genderMale {
+          background-color: rgba(22, 93, 255, 0.1);
+          color: #165DFF;
+        }
+
+        &.genderFemale {
+          background-color: rgba(255, 107, 157, 0.1);
+          color: $color-emotion;
+        }
+      }
+
+      .roleRemoveBtn {
+        width: 56rpx;
+        height: 56rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $radius-round;
+        background-color: rgba(245, 63, 63, 0.08);
+        color: $color-error;
+        font-size: $font-size-lg;
+
+        &.disabled {
+          opacity: 0.3;
+        }
+      }
+    }
+
+    .roleAddBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80rpx;
+      margin-top: $spacing-md;
+      border: 2rpx dashed $color-border;
+      border-radius: $radius-md;
+      color: $color-text-tertiary;
+      font-size: $font-size-sm;
+      transition: all $transition-fast;
+
+      &:active {
+        background-color: $color-bg-hover;
+      }
+    }
+  }
+
   .footer {
     position: fixed;
     bottom: 0;

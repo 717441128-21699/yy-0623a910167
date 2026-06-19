@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
+import { useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
 import FleetCard from '@/components/FleetCard';
 import EmptyState from '@/components/EmptyState';
-import { mockFleets } from '@/data/mockFleets';
+import { useFleetStore } from '@/store/fleetStore';
 import { Fleet } from '@/types/fleet';
 
 const MyFleetsPage: React.FC = () => {
+  const getMyInitiatedFleets = useFleetStore((s) => s.getMyInitiatedFleets);
+  const getMyJoinedFleets = useFleetStore((s) => s.getMyJoinedFleets);
+  const allFleets = useFleetStore((s) => s.fleets);
+
   const [activeTab, setActiveTab] = useState<'initiated' | 'joined'>('initiated');
 
-  const initiatedFleets: Fleet[] = mockFleets.slice(0, 2);
-  const joinedFleets: Fleet[] = mockFleets.slice(2, 5);
+  useDidShow(() => {
+    console.log('[MyFleets] 页面显示，总车队数:', allFleets.length);
+  });
+
+  const initiatedFleets: Fleet[] = getMyInitiatedFleets();
+  const joinedFleets: Fleet[] = getMyJoinedFleets();
 
   const currentList = activeTab === 'initiated' ? initiatedFleets : joinedFleets;
 
@@ -55,9 +64,7 @@ const MyFleetsPage: React.FC = () => {
 
       <ScrollView scrollY className={styles.listSection}>
         {currentList.length > 0 ? (
-          currentList.map(fleet => (
-            <FleetCard key={fleet.id} fleet={fleet} />
-          ))
+          currentList.map((fleet) => <FleetCard key={fleet.id} fleet={fleet} />)
         ) : (
           <EmptyState
             icon={activeTab === 'initiated' ? '📝' : '🎭'}

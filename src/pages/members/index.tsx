@@ -1,28 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import { View, Text } from '@tarojs/components';
+import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
 import StatusBadge from '@/components/StatusBadge';
-import EmptyState from '@/components/EmptyState';
-import { mockFleets } from '@/data/mockFleets';
-import { Fleet, FleetMember, MemberStatus } from '@/types/fleet';
+import { useFleetStore } from '@/store/fleetStore';
+import { Fleet, FleetMember, RoleSlot } from '@/types/fleet';
 
-type TabType = 'all' | 'confirmed' | 'pending' | 'waitlist';
+const getGenderLabel = (gender?: string) => {
+  if (gender === 'male') return '♂ 男';
+  if (gender === 'female') return '♀ 女';
+  return '不限';
+};
+
+const getGenderClass = (gender?: string) => {
+  if (gender === 'male') return 'male';
+  if (gender === 'female') return 'female';
+  return 'any';
+};
 
 const MembersPage: React.FC = () => {
   const router = useRouter();
   const fleetId = router.params.id;
+  const getFleetById = useFleetStore((s) => s.getFleetById);
+  const confirmMember = useFleetStore((s) => s.confirmMember);
+  const updateMemberStatus = useFleetStore((s) => s.updateMemberStatus);
+  const removeMember = useFleetStore((s) => s.removeMember);
+  const remindMember = useFleetStore((s) => s.remindMember);
+  const remindAllPending = useFleetStore((s) => s.remindAllPending);
+
   const [fleet, setFleet] = useState<Fleet | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [activeTab, setActiveTab] = useState<'roles' | 'pending' | 'all'>('roles');
+
+  const loadFleet = () => {
+    const found = getFleetById(fleetId || '');
+    if (found) {
+      setFleet({ ...found });
+      console.log('[Members] 加载车队:', found.id, '成员数:', found.members.length);
+    }
+  };
 
   useEffect(() => {
-    const found = mockFleets.find(f => f.id === fleetId);
-    if (found) {
-      setFleet(found);
-    }
-    console.log('[Members] 加载成员管理:', fleetId);
-  }, [fleetId]);
+    loadFleet();
+  }, [fleetId, getFleetById]);
+
+  useDidShow(() => {
+    loadFleet();
+  });
 
   if (!fleet) {
     return (
@@ -32,244 +56,326 @@ const MembersPage: React.FC = () => {
     );
   }
 
-  const confirmedMembers = fleet.members.filter(m => m.status === 'confirmed');
-  const pendingMembers = fleet.members.filter(m => m.status === 'pending');
-  const waitlistMembers = fleet.members.filter(m => m.status === 'waitlist');
+  const confirmedMembers = fleet.members.filter((m) => m.status === 'confirmed');
+  const pendingMembers = fleet.members.filter((m) => m.status === 'pending');
+  const waitlistMembers = fleet.members.filter((m) => m.status === 'waitlist');
 
-  const getFilteredMembers = (): FleetMember[] => {
-    switch (activeTab) {
-      case 'confirmed':
-        return confirmedMembers;
-      case 'pending':
-        return pendingMembers;
-      case 'waitlist':
-        return waitlistMembers;
-      default:
-        return fleet.members;
-    }
+  const unconfirmedForDriving = confirmedMembers.filter(
+    (m) => !m.confirmed && m.userId !== fleet.initiatorId
+  );
+
+  const handleConfirm = (memberId: string, roleId?: string) => {
+    if (!fleetId) return;
+    confirmMember(fleetId, memberId, roleId);
+    Taro.showToast({ title: '已通过', icon: 'success' });
+    setTimeout(loadFleet, 200);
   };
 
-  const filteredMembers = getFilteredMembers();
-
-  const handleConfirm = (memberId: string) => {
-    console.log('[Members] 确认成员上车:', memberId);
-    Taro.showToast({
-      title: '已确认上车',
-      icon: 'success'
-    });
-  };
-
-  const handleRemove = (memberId: string, memberName: string) => {
+  const handleReject = (memberId: string) => {
+    if (!fleetId) return;
     Taro.showModal({
-      title: '确认移除',
-      content: `确定要移除 ${memberName} 吗？`,
-      confirmText: '移除',
-      confirmColor: '#F53F3F',
+      title: '确认拒绝',
+      content: '确定要拒绝该成员的报名吗？',
       success: (res) => {
         if (res.confirm) {
-          console.log('[Members] 移除成员:', memberId);
-          Taro.showToast({
-            title: '已移除',
-            icon: 'success'
-          });
+          removeMember(fleetId, memberId);
+          Taro.showToast({ title: '已拒绝', icon: 'none' });
+          setTimeout(loadFleet, 200);
         }
       }
     });
   };
 
-  const handlePromote = (memberId: string) => {
-    console.log('[Members] 候补转正:', memberId);
-    Taro.showToast({
-      title: '已通知候补玩家',
-      icon: 'success'
-    });
+  const handleRemind = (memberId: string) => {
+    if (!fleetId) return;
+    remindMember(fleetId, memberId);
+    Taro.showToast({ title: '已发送提醒', icon: 'success' });
+    setTimeout(loadFleet, 200);
   };
 
   const handleRemindAll = () => {
-    console.log('[Members] 一键提醒所有待确认成员');
-    Taro.showModal({
-      title: '发送提醒',
-      content: `将向 ${pendingMembers.length} 位待确认成员发送确认提醒`,
-      confirmText: '发送',
-      success: (res) => {
-        if (res.confirm) {
-          Taro.showToast({
-            title: '提醒已发送',
-            icon: 'success'
-          });
-        }
-      }
-    });
+    if (!fleetId || unconfirmedForDriving.length === 0) return;
+    remindAllPending(fleetId);
+    Taro.showToast({ title: `已提醒${unconfirmedForDriving.length}人`, icon: 'success' });
+    setTimeout(loadFleet, 200);
   };
 
-  const renderMemberActions = (member: FleetMember) => {
-    switch (member.status) {
-      case 'pending':
-        return (
-          <View className={styles.actionButtons}>
-            <View
-              className={classnames(styles.actionBtn, styles.danger)}
-              onClick={() => handleRemove(member.id, member.name)}
-            >
-              <Text>拒绝</Text>
-            </View>
-            <View
-              className={classnames(styles.actionBtn, styles.primary)}
-              onClick={() => handleConfirm(member.id)}
-            >
-              <Text>确认上车</Text>
-            </View>
-          </View>
-        );
-      case 'waitlist':
-        return (
-          <View className={styles.actionButtons}>
-            <View
-              className={classnames(styles.actionBtn, styles.danger)}
-              onClick={() => handleRemove(member.id, member.name)}
-            >
-              <Text>移除</Text>
-            </View>
-            <View
-              className={classnames(styles.actionBtn, styles.primary)}
-              onClick={() => handlePromote(member.id)}
-            >
-              <Text>通知上车</Text>
-            </View>
-          </View>
-        );
-      case 'confirmed':
-        return (
-          <View className={styles.actionButtons}>
-            <View
-              className={classnames(styles.actionBtn, styles.secondary)}
-            >
-              <Text>联系Ta</Text>
-            </View>
-            <View
-              className={classnames(styles.actionBtn, styles.danger)}
-              onClick={() => handleRemove(member.id, member.name)}
-            >
-              <Text>移除</Text>
-            </View>
-          </View>
-        );
-      default:
-        return null;
-    }
+  const getAssignedMember = (role: RoleSlot): FleetMember | null => {
+    const assignment = fleet.roleAssignments.find((a) => a.roleId === role.id);
+    if (!assignment || !assignment.memberId) return null;
+    return fleet.members.find((m) => m.id === assignment.memberId) || null;
   };
 
-  const tabs: { value: TabType; label: string; count: number }[] = [
-    { value: 'all', label: '全部', count: fleet.members.length },
-    { value: 'confirmed', label: '已上车', count: confirmedMembers.length },
-    { value: 'pending', label: '待确认', count: pendingMembers.length },
-    { value: 'waitlist', label: '候补', count: waitlistMembers.length }
-  ];
+  const getPendingForRole = (role: RoleSlot): FleetMember[] => {
+    return fleet.members.filter(
+      (m) =>
+        m.status === 'pending' &&
+        (!m.preferredRoleId || m.preferredRoleId === role.id)
+    );
+  };
+
+  const getWaitlistForRole = (role: RoleSlot): FleetMember[] => {
+    return fleet.members.filter(
+      (m) =>
+        m.status === 'waitlist' &&
+        (!m.preferredRoleId || m.preferredRoleId === role.id)
+    );
+  };
+
+  const getRoleStatus = (role: RoleSlot): 'filled' | 'pending' | 'empty' => {
+    const member = getAssignedMember(role);
+    if (member?.status === 'confirmed') return 'filled';
+    const pendings = getPendingForRole(role);
+    if (pendings.length > 0 || member?.status === 'pending') return 'pending';
+    return 'empty';
+  };
+
+  const renderMemberItem = (
+    member: FleetMember,
+    compact: boolean = false,
+    showRemind: boolean = false
+  ) => {
+    const isRecentlyReminded =
+      member.lastRemindedAt && Date.now() - member.lastRemindedAt < 60000;
+    const isInitiator = member.userId === fleet.initiatorId;
+
+    return (
+      <View key={member.id} className={compact ? styles.memberItem : styles.memberItem}>
+        <View className={compact ? styles.memberAvatar : styles.memberAvatar} />
+        <View className={styles.memberInfo}>
+          <Text className={styles.memberName}>
+            {member.name}
+            {isInitiator && <Text className={styles.miniTag}>发起人</Text>}
+          </Text>
+          <View className={styles.memberTags}>
+            <Text className={styles.miniTag}>
+              {member.gender === 'male' ? '♂ 男' : member.gender === 'female' ? '♀ 女' : ''}
+            </Text>
+            {member.canCrossPlay && <Text className={styles.miniTag}>可反串</Text>}
+            {member.hasReadSeries && <Text className={styles.miniTag}>已读同系列</Text>}
+            {member.assignedRoleId && (() => {
+              const role = fleet.roleSlots.find((r) => r.id === member.assignedRoleId);
+              return role ? <Text className={styles.miniTag}>{role.name}</Text> : null;
+            })()}
+            {member.confirmed && <Text className={styles.miniTag}>✓ 已确认开车</Text>}
+          </View>
+          <Text className={styles.memberMeta}>
+            {member.availableTime && `可到:${member.availableTime}`}
+            {member.rolePreference && member.availableTime && ' · '}
+            {member.rolePreference && `意向:${member.rolePreference}`}
+            {member.remark && (member.availableTime || member.rolePreference) && ' · '}
+            {member.remark}
+          </Text>
+          {isRecentlyReminded && (
+            <Text className={styles.remindedTag}>
+              已提醒（{Math.ceil((Date.now() - (member.lastRemindedAt || 0)) / 1000)}秒前）
+            </Text>
+          )}
+        </View>
+        <View className={styles.memberActions}>
+          {member.status === 'pending' && (
+            <>
+              <View
+                className={classnames(styles.actionBtn, styles.confirmBtn)}
+                onClick={() => handleConfirm(member.id)}
+              >
+                <Text>通过</Text>
+              </View>
+              <View
+                className={classnames(styles.actionBtn, styles.rejectBtn)}
+                onClick={() => handleReject(member.id)}
+              >
+                <Text>拒绝</Text>
+              </View>
+            </>
+          )}
+          {member.status === 'confirmed' && !isInitiator && (
+            <>
+              {!member.confirmed && showRemind && (
+                <View
+                  className={classnames(
+                    styles.actionBtn,
+                    styles.remindBtn,
+                    isRecentlyReminded && styles.disabled
+                  )}
+                  onClick={() => !isRecentlyReminded && handleRemind(member.id)}
+                >
+                  <Text>{isRecentlyReminded ? '已提醒' : '提醒'}</Text>
+                </View>
+              )}
+              <StatusBadge status={member.status} />
+            </>
+          )}
+          {member.status === 'waitlist' && (
+            <StatusBadge status={member.status} />
+          )}
+          {isInitiator && <StatusBadge status="confirmed" />}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View className={styles.membersPage}>
-      <View className={styles.summaryCard}>
-        <Text className={styles.scriptName}>{fleet.scriptName}</Text>
-        <Text className={styles.fleetInfo}>
-          {fleet.date} {fleet.time} · {fleet.store}
-        </Text>
-        <View className={styles.statsRow}>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>{fleet.filledSlots}</Text>
-            <Text className={styles.statLabel}>已上车</Text>
-          </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>{pendingMembers.length}</Text>
-            <Text className={styles.statLabel}>待确认</Text>
-          </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>{waitlistMembers.length}</Text>
-            <Text className={styles.statLabel}>候补</Text>
-          </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>{fleet.totalSlots - fleet.filledSlots}</Text>
-            <Text className={styles.statLabel}>剩余位</Text>
-          </View>
+      <View className={styles.summaryBar}>
+        <View className={styles.summaryItem}>
+          <Text className={styles.summaryNum}>{confirmedMembers.length}</Text>
+          <Text className={styles.summaryLabel}>已上车</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.summaryItem}>
+          <Text className={classnames(styles.summaryNum, 'pending')}>{pendingMembers.length}</Text>
+          <Text className={styles.summaryLabel}>待审核</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.summaryItem}>
+          <Text className={classnames(styles.summaryNum, 'unconfirmed')}>
+            {unconfirmedForDriving.length}
+          </Text>
+          <Text className={styles.summaryLabel}>待确认开车</Text>
         </View>
       </View>
 
-      <View className={styles.tabBar}>
-        {tabs.map(tab => (
-          <View
-            key={tab.value}
-            className={classnames(styles.tabItem, activeTab === tab.value && styles.active)}
-            onClick={() => setActiveTab(tab.value)}
-          >
-            <Text>{tab.label}</Text>
-            <Text className={styles.tabCount}>{tab.count}</Text>
+      {unconfirmedForDriving.length > 0 && (
+        <View className={styles.unconfirmedSection}>
+          <View className={styles.unconfirmedHeader}>
+            <Text className={styles.unconfirmedTitle}>
+              <Text className={styles.warnIcon}>⚠️</Text>
+              {unconfirmedForDriving.length}人未确认能否到场
+            </Text>
+            <View
+              className={classnames(styles.remindAllBtn)}
+              onClick={handleRemindAll}
+            >
+              <Text>一键提醒全部</Text>
+            </View>
           </View>
-        ))}
+          <View className={styles.unconfirmedList}>
+            {unconfirmedForDriving.map((member) => {
+              const isRecentlyReminded =
+                member.lastRemindedAt && Date.now() - member.lastRemindedAt < 60000;
+              return (
+                <View key={member.id} className={styles.unconfirmedItem}>
+                  <View className={styles.unconfirmedAvatar} />
+                  <View className={styles.unconfirmedInfo}>
+                    <Text className={styles.unconfirmedName}>{member.name}</Text>
+                    <Text className={styles.unconfirmedRole}>
+                      {member.assignedRoleId && (() => {
+                        const role = fleet.roleSlots.find((r) => r.id === member.assignedRoleId);
+                        return role ? role.name : '';
+                      })()}
+                      {member.availableTime && ` · 可到:${member.availableTime}`}
+                    </Text>
+                    {isRecentlyReminded && (
+                      <Text className={styles.remindedTag}>
+                        已提醒（{Math.ceil((Date.now() - (member.lastRemindedAt || 0)) / 1000)}秒前）
+                      </Text>
+                    )}
+                  </View>
+                  <View
+                    className={classnames(
+                      styles.remindBtn,
+                      isRecentlyReminded && styles.disabled
+                    )}
+                    onClick={() => !isRecentlyReminded && handleRemind(member.id)}
+                  >
+                    <Text>{isRecentlyReminded ? '已提醒' : '提醒'}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      <View className={styles.tabBar}>
+        <View
+          className={classnames(styles.tabItem, activeTab === 'roles' && styles.active)}
+          onClick={() => setActiveTab('roles')}
+        >
+          <Text>按角色位</Text>
+        </View>
+        <View
+          className={classnames(styles.tabItem, activeTab === 'pending' && styles.active)}
+          onClick={() => setActiveTab('pending')}
+        >
+          <Text>待审核 ({pendingMembers.length})</Text>
+        </View>
+        <View
+          className={classnames(styles.tabItem, activeTab === 'all' && styles.active)}
+          onClick={() => setActiveTab('all')}
+        >
+          <Text>全部成员</Text>
+        </View>
       </View>
 
-      <ScrollView scrollY className={styles.memberList}>
-        {filteredMembers.length > 0 ? (
-          filteredMembers.map(member => (
-            <View key={member.id} className={styles.memberCard}>
-              <View className={styles.memberHeader}>
-                <Image
-                  className={styles.memberAvatar}
-                  src={member.avatar}
-                  mode="aspectFill"
-                />
-                <View className={styles.memberInfo}>
-                  <Text className={styles.memberName}>{member.name}</Text>
-                  <View className={styles.memberTags}>
-                    <View className={styles.tag}>
-                      <Text>{member.gender === 'male' ? '男' : '女'}</Text>
-                    </View>
-                    {member.canCrossPlay && (
-                      <View className={styles.tag}>
-                        <Text>可反串</Text>
-                      </View>
-                    )}
-                    {member.hasReadSeries && (
-                      <View className={styles.tag}>
-                        <Text>已读同系列</Text>
-                      </View>
+      {activeTab === 'roles' && fleet.roleSlots.length > 0 && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>
+            角色位分组
+            <Text className={styles.titleCount}>共{fleet.roleSlots.length}位</Text>
+          </Text>
+          <View className={styles.rolesSection}>
+            {fleet.roleSlots.map((role) => {
+              const assigned = getAssignedMember(role);
+              const pendings = getPendingForRole(role);
+              const waitlist = getWaitlistForRole(role);
+              const status = getRoleStatus(role);
+
+              return (
+                <View key={role.id} className={styles.roleGroup}>
+                  <View className={styles.roleHeader}>
+                    <Text className={styles.roleName}>{role.name}</Text>
+                    <Text className={classnames(styles.roleGender, getGenderClass(role.gender))}>
+                      {getGenderLabel(role.gender)}
+                    </Text>
+                    <Text className={classnames(styles.roleStatus, status)}>
+                      {status === 'filled' && '✓ 已就位'}
+                      {status === 'pending' && `待确认（${pendings.length + (assigned?.status === 'pending' ? 1 : 0)}人）`}
+                      {status === 'empty' && '虚位以待'}
+                    </Text>
+                  </View>
+                  <View className={styles.memberList}>
+                    {assigned && renderMemberItem(assigned, true, true)}
+                    {pendings
+                      .filter((p) => !assigned || p.id !== assigned.id)
+                      .map((p) => renderMemberItem(p, true, false))}
+                    {waitlist.map((w) => renderMemberItem(w, true, false))}
+                    {!assigned && pendings.length === 0 && waitlist.length === 0 && (
+                      <View className={styles.emptyMember}>暂无报名人选</View>
                     )}
                   </View>
                 </View>
-                <StatusBadge status={member.status} className={styles.statusBadge} />
-              </View>
-
-              <View className={styles.memberDetail}>
-                <View className={styles.detailRow}>
-                  <Text className={styles.detailLabel}>可到时间</Text>
-                  <Text className={styles.detailValue}>{member.availableTime || '未填写'}</Text>
-                </View>
-                <View className={styles.detailRow}>
-                  <Text className={styles.detailLabel}>意向角色</Text>
-                  <Text className={styles.detailValue}>{member.rolePreference || '未选择'}</Text>
-                </View>
-                <View className={styles.detailRow}>
-                  <Text className={styles.detailLabel}>加入时间</Text>
-                  <Text className={styles.detailValue}>{member.joinTime || '刚刚'}</Text>
-                </View>
-              </View>
-
-              {renderMemberActions(member)}
-            </View>
-          ))
-        ) : (
-          <View className={styles.emptySection}>
-            <EmptyState
-              icon="👥"
-              title="暂无成员"
-              description="快去分享车队招募玩家吧"
-            />
+              );
+            })}
           </View>
-        )}
-      </ScrollView>
+        </View>
+      )}
 
-      {pendingMembers.length > 0 && (
-        <View className={styles.footer}>
-          <View className={styles.remindBtn} onClick={handleRemindAll}>
-            <Text>一键提醒确认 ({pendingMembers.length})</Text>
+      {activeTab === 'pending' && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>
+            待审核报名
+            <Text className={styles.titleCount}>{pendingMembers.length}人</Text>
+          </Text>
+          {pendingMembers.length > 0 ? (
+            <View className={styles.flatSection}>
+              {pendingMembers.map((m) => renderMemberItem(m, false, false))}
+            </View>
+          ) : (
+            <View className={styles.emptyMember}>暂无待审核成员</View>
+          )}
+        </View>
+      )}
+
+      {activeTab === 'all' && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>
+            全部成员
+            <Text className={styles.titleCount}>{fleet.members.length}人</Text>
+          </Text>
+          <View className={styles.flatSection}>
+            {fleet.members.map((m) => renderMemberItem(m, false, true))}
           </View>
         </View>
       )}

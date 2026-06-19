@@ -1,98 +1,157 @@
-import React from 'react';
-import { View, Text, Image } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import React, { useState } from 'react';
+import { View, Text } from '@tarojs/components';
+import Taro, { useDidShow, useRouter } from '@tarojs/taro';
+import classnames from 'classnames';
 import styles from './index.module.scss';
+import { useFleetStore } from '@/store/fleetStore';
 
 const MinePage: React.FC = () => {
-  const menuItems = [
-    { icon: '🔔', title: '消息通知', badge: 3 },
-    { icon: '❤️', title: '我的收藏' },
-    { icon: '🏆', title: '我的评价' },
-    { icon: '📋', title: '打本记录' }
-  ];
+  const router = useRouter();
+  const getMyInitiatedFleets = useFleetStore((s) => s.getMyInitiatedFleets);
+  const getMyJoinedFleets = useFleetStore((s) => s.getMyJoinedFleets);
+  const getPendingConfirmations = useFleetStore((s) => s.getPendingConfirmations);
+  const currentUserId = useFleetStore((s) => s.currentUserId);
+  const confirmSelfDriving = useFleetStore((s) => s.confirmSelfDriving);
 
-  const settingItems = [
-    { icon: '⚙️', title: '设置' },
-    { icon: '💬', title: '意见反馈' },
-    { icon: '❓', title: '帮助中心' },
-    { icon: '📱', title: '关于我们' }
-  ];
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleMenuClick = (title: string) => {
-    console.log('[Mine] 点击菜单项:', title);
-    Taro.showToast({
-      title: `${title}功能开发中`,
-      icon: 'none'
-    });
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  useDidShow(() => {
+    refresh();
+  });
+
+  const initiatedCount = getMyInitiatedFleets().length;
+  const joinedFleets = getMyJoinedFleets();
+  const joinedCount = joinedFleets.length;
+  const pendingConfirmations = getPendingConfirmations();
+
+  const confirmedJoined = joinedFleets.filter(
+    (f) => f.members.find((m) => m.userId === currentUserId)?.status === 'confirmed'
+  ).length;
+
+  const handleConfirmDriving = (fleetId: string) => {
+    confirmSelfDriving(fleetId, currentUserId);
+    Taro.showToast({ title: '已确认到场', icon: 'success' });
+    refresh();
   };
 
   return (
     <View className={styles.minePage}>
-      <View className={styles.header}>
-        <View className={styles.userInfo}>
-          <Image
-            className={styles.avatar}
-            src="https://picsum.photos/id/64/200/200"
-            mode="aspectFill"
-          />
-          <View className={styles.userDetail}>
-            <Text className={styles.userName}>推理狂人</Text>
-            <Text className={styles.userDesc}>硬核推理爱好者 · 已打本 86 个</Text>
+      <View className={styles.headerCard}>
+        <View className={styles.userRow}>
+          <View className={styles.avatar} />
+          <View className={styles.userInfo}>
+            <Text className={styles.userName}>剧本杀老玩家</Text>
+            <Text className={styles.userId}>ID: {currentUserId.slice(0, 8)}</Text>
           </View>
           <View className={styles.editBtn}>
             <Text>编辑</Text>
           </View>
         </View>
+      </View>
 
-        <View className={styles.statsRow}>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>12</Text>
-            <Text className={styles.statLabel}>发起车队</Text>
+      <View className={styles.reminderBanner}>
+        <View className={styles.bannerHeader}>
+          <Text className={styles.bannerIcon}>🔔</Text>
+          <Text className={styles.bannerTitle}>开车确认提醒</Text>
+          {pendingConfirmations.length > 0 && (
+            <View className={styles.badge}>{pendingConfirmations.length}</View>
+          )}
+        </View>
+        {pendingConfirmations.length > 0 ? (
+          <View className={styles.reminderList}>
+            {pendingConfirmations.slice(0, 3).map(({ fleet, member }) => (
+              <View key={fleet.id} className={styles.reminderItem}>
+                <View className={styles.reminderInfo}>
+                  <Text className={styles.reminderScript}>{fleet.scriptName}</Text>
+                  <Text className={styles.reminderMeta}>
+                    {fleet.date} {fleet.time} · {fleet.store}
+                    {member.assignedRoleId && (() => {
+                      const role = fleet.roleSlots.find((r) => r.id === member.assignedRoleId);
+                      return role ? ` · ${role.name}` : '';
+                    })()}
+                  </Text>
+                </View>
+                <View
+                  className={classnames(styles.confirmBtn, member.confirmed && styles.disabled)}
+                  onClick={() => !member.confirmed && handleConfirmDriving(fleet.id)}
+                >
+                  <Text>{member.confirmed ? '已确认' : '确认到场'}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>38</Text>
-            <Text className={styles.statLabel}>参与车队</Text>
-          </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>86</Text>
-            <Text className={styles.statLabel}>打本总数</Text>
-          </View>
-          <View className={styles.statItem}>
-            <Text className={styles.statNum}>15</Text>
-            <Text className={styles.statLabel}>城限/独家</Text>
-          </View>
+        ) : (
+          <View className={styles.emptyBanner}>暂无待确认的车队</View>
+        )}
+      </View>
+
+      <View className={styles.statsRow}>
+        <View className={styles.statItem}>
+          <Text className={styles.statNum}>{initiatedCount}</Text>
+          <Text className={styles.statLabel}>发起的车队</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.statItem}>
+          <Text className={classnames(styles.statNum, 'accent')}>{confirmedJoined}</Text>
+          <Text className={styles.statLabel}>已上车</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.statItem}>
+          <Text className={styles.statNum}>{pendingConfirmations.length}</Text>
+          <Text className={styles.statLabel}>待确认</Text>
         </View>
       </View>
 
-      <View className={styles.sectionTitle}>我的服务</View>
       <View className={styles.menuSection}>
-        {menuItems.map(item => (
-          <View
-            key={item.title}
-            className={styles.menuItem}
-            onClick={() => handleMenuClick(item.title)}
-          >
-            <Text className={styles.menuIcon}>{item.icon}</Text>
-            <Text className={styles.menuTitle}>{item.title}</Text>
-            {item.badge && <Text className={styles.menuBadge}>{item.badge}</Text>}
-            <Text className={styles.menuArrow}>›</Text>
-          </View>
-        ))}
+        <Text className={styles.sectionTitle}>我的车队</Text>
+        <View
+          className={styles.menuItem}
+          onClick={() => Taro.switchTab({ url: '/pages/myfleets/index' })}
+        >
+          <Text className={styles.menuIcon}>🎭</Text>
+          <Text className={styles.menuText}>我的车队</Text>
+          <Text className={styles.menuArrow}>›</Text>
+        </View>
       </View>
 
-      <View className={styles.sectionTitle}>设置与帮助</View>
       <View className={styles.menuSection}>
-        {settingItems.map(item => (
-          <View
-            key={item.title}
-            className={styles.menuItem}
-            onClick={() => handleMenuClick(item.title)}
-          >
-            <Text className={styles.menuIcon}>{item.icon}</Text>
-            <Text className={styles.menuTitle}>{item.title}</Text>
-            <Text className={styles.menuArrow}>›</Text>
-          </View>
-        ))}
+        <Text className={styles.sectionTitle}>其他</Text>
+        <View className={styles.menuItem}>
+          <Text className={styles.menuIcon}>⭐</Text>
+          <Text className={styles.menuText}>我的收藏</Text>
+          <Text className={styles.menuArrow}>›</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.menuItem}>
+          <Text className={styles.menuIcon}>⚙️</Text>
+          <Text className={styles.menuText}>设置</Text>
+          <Text className={styles.menuArrow}>›</Text>
+        </View>
+        <View className={styles.divider} />
+        <View className={styles.menuItem}>
+          <Text className={styles.menuIcon}>💬</Text>
+          <Text className={styles.menuText}>意见反馈</Text>
+          <Text className={styles.menuArrow}>›</Text>
+        </View>
+      </View>
+
+      <View
+        className={styles.logoutBtn}
+        onClick={() => {
+          Taro.showModal({
+            title: '提示',
+            content: '确认退出登录？',
+            success: (res) => {
+              if (res.confirm) {
+                Taro.showToast({ title: '已退出', icon: 'none' });
+              }
+            }
+          });
+        }}
+      >
+        <Text>退出登录</Text>
       </View>
     </View>
   );

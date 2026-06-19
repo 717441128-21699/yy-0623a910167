@@ -5,7 +5,7 @@ import classnames from 'classnames';
 import styles from './index.module.scss';
 import Tag from '../Tag';
 import ProgressBar from '../ProgressBar';
-import { Fleet, ScriptType } from '@/types/fleet';
+import { Fleet, ScriptType, RoleSlot, FleetMember } from '@/types/fleet';
 
 export interface FleetCardProps {
   fleet: Fleet;
@@ -31,6 +31,15 @@ const typeLabelMap: Record<ScriptType, string> = {
   other: '其他'
 };
 
+const getConfirmedCount = (fleet: Fleet): number => {
+  return fleet.members.filter((m) => m.status === 'confirmed').length;
+};
+
+const getEmptyRoles = (fleet: Fleet): RoleSlot[] => {
+  const assignedRoleIds = new Set(fleet.roleAssignments.filter((a) => a.status === 'confirmed').map((a) => a.roleId));
+  return fleet.roleSlots.filter((r) => !assignedRoleIds.has(r.id));
+};
+
 const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = true }) => {
   const handleClick = () => {
     Taro.navigateTo({
@@ -38,7 +47,8 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
     });
   };
 
-  const remainingSlots = fleet.totalSlots - fleet.filledSlots;
+  const confirmedCount = getConfirmedCount(fleet);
+  const emptyRoles = getEmptyRoles(fleet);
 
   return (
     <View className={classnames(styles.fleetCard, className)} onClick={handleClick}>
@@ -72,7 +82,21 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
 
       {showProgress && (
         <View className={styles.progressSection}>
-          <ProgressBar current={fleet.filledSlots} total={fleet.totalSlots} size="small" />
+          <ProgressBar current={confirmedCount} total={fleet.totalPlayers} size="small" />
+        </View>
+      )}
+
+      {fleet.roleSlots.length > 0 && emptyRoles.length > 0 && (
+        <View className={styles.roleHint}>
+          <Text className={styles.roleHintLabel}>缺：</Text>
+          {emptyRoles.slice(0, 3).map((role) => (
+            <Text key={role.id} className={styles.roleHintItem}>
+              {role.name}{role.gender !== 'any' ? (role.gender === 'male' ? '♂' : '♀') : ''}
+            </Text>
+          ))}
+          {emptyRoles.length > 3 && (
+            <Text className={styles.roleHintMore}>+{emptyRoles.length - 3}</Text>
+          )}
         </View>
       )}
 
@@ -82,8 +106,8 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
           <Text className={styles.name}>{fleet.initiator.name}</Text>
         </View>
         <View className={styles.slotsInfo}>
-          {remainingSlots > 0 ? (
-            <Text>还差 <Text className={styles.highlight}>{remainingSlots}</Text> 人</Text>
+          {fleet.neededPlayers > 0 ? (
+            <Text>还差 <Text className={styles.highlight}>{fleet.neededPlayers}</Text> 人</Text>
           ) : (
             <Text className={styles.highlight}>已满员</Text>
           )}

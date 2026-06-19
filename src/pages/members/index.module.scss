@@ -3,45 +3,143 @@
 .membersPage {
   min-height: 100vh;
   background-color: $color-bg-page;
-  padding-bottom: 160rpx;
 
-  .summaryCard {
-    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
-    margin: $spacing-md $spacing-lg;
-    padding: $spacing-lg;
-    border-radius: $radius-lg;
-    color: $color-text-white;
+  .summaryBar {
+    background-color: $color-bg-card;
+    padding: $spacing-md $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
 
-    .scriptName {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-semibold;
-      margin-bottom: 8rpx;
-    }
+    .summaryItem {
+      flex: 1;
+      text-align: center;
 
-    .fleetInfo {
-      font-size: $font-size-sm;
-      opacity: 0.85;
-      margin-bottom: $spacing-md;
-    }
+      .summaryNum {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: $color-text-primary;
 
-    .statsRow {
-      display: flex;
-      padding-top: $spacing-md;
-      border-top: 1rpx solid rgba(255, 255, 255, 0.2);
-
-      .statItem {
-        flex: 1;
-        text-align: center;
-
-        .statNum {
-          font-size: $font-size-xl;
-          font-weight: $font-weight-bold;
-          margin-bottom: 4rpx;
+        &.pending {
+          color: $color-status-pending;
         }
 
-        .statLabel {
+        &.unconfirmed {
+          color: $color-error;
+        }
+      }
+
+      .summaryLabel {
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+        margin-top: 4rpx;
+      }
+    }
+
+    .divider {
+      width: 1rpx;
+      height: 60rpx;
+      background-color: $color-divider;
+    }
+  }
+
+  .unconfirmedSection {
+    background-color: rgba(255, 77, 79, 0.05);
+    margin: $spacing-md $spacing-lg;
+    border-radius: $radius-lg;
+    padding: $spacing-md $spacing-lg;
+    border: 2rpx solid rgba(255, 77, 79, 0.2);
+
+    .unconfirmedHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: $spacing-sm;
+
+      .unconfirmedTitle {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        color: $color-error;
+
+        .warnIcon {
+          margin-right: 6rpx;
+        }
+      }
+
+      .remindAllBtn {
+        font-size: $font-size-sm;
+        color: $color-error;
+        padding: 8rpx 20rpx;
+        border-radius: $radius-xs;
+        background-color: rgba(255, 77, 79, 0.1);
+
+        &:active {
+          background-color: rgba(255, 77, 79, 0.2);
+        }
+
+        &.disabled {
+          opacity: 0.5;
+        }
+      }
+    }
+
+    .unconfirmedList {
+      .unconfirmedItem {
+        display: flex;
+        align-items: center;
+        padding: $spacing-sm 0;
+        border-top: 1rpx dashed rgba(255, 77, 79, 0.15);
+
+        &:first-child {
+          border-top: none;
+        }
+
+        .unconfirmedAvatar {
+          width: 60rpx;
+          height: 60rpx;
+          border-radius: $radius-round;
+          margin-right: $spacing-sm;
+          background-color: $color-bg-tag;
+        }
+
+        .unconfirmedInfo {
+          flex: 1;
+          min-width: 0;
+
+          .unconfirmedName {
+            font-size: $font-size-sm;
+            color: $color-text-primary;
+            font-weight: $font-weight-medium;
+          }
+
+          .unconfirmedRole {
+            font-size: $font-size-xs;
+            color: $color-text-tertiary;
+            margin-top: 2rpx;
+          }
+
+          .remindedTag {
+            font-size: $font-size-xs;
+            color: $color-status-pending;
+            margin-top: 2rpx;
+          }
+        }
+
+        .remindBtn {
           font-size: $font-size-xs;
-          opacity: 0.8;
+          color: $color-error;
+          padding: 6rpx 16rpx;
+          border-radius: $radius-xs;
+          background-color: rgba(255, 77, 79, 0.1);
+
+          &:active {
+            background-color: rgba(255, 77, 79, 0.2);
+          }
+
+          &.disabled {
+            color: $color-text-tertiary;
+            background-color: $color-bg-tag;
+          }
         }
       }
     }
@@ -50,195 +148,311 @@
   .tabBar {
     display: flex;
     background-color: $color-bg-card;
-    padding: $spacing-sm $spacing-lg;
-    gap: $spacing-sm;
+    padding: 0 $spacing-lg;
 
     .tabItem {
       flex: 1;
+      height: 88rpx;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: $spacing-sm 0;
-      font-size: $font-size-sm;
+      font-size: $font-size-md;
       color: $color-text-secondary;
-      position: relative;
+      border-bottom: 4rpx solid transparent;
       transition: all $transition-fast;
-      border-radius: $radius-md;
 
       &.active {
-        background-color: $color-primary-bg;
         color: $color-primary;
-        font-weight: $font-weight-medium;
-      }
-
-      .tabCount {
-        margin-left: 6rpx;
-        font-size: $font-size-xs;
+        font-weight: $font-weight-semibold;
+        border-bottom-color: $color-primary;
       }
     }
   }
 
-  .memberList {
-    padding: $spacing-md $spacing-lg;
+  .section {
+    background-color: $color-bg-card;
+    margin: $spacing-md $spacing-lg;
+    border-radius: $radius-lg;
+    padding: $spacing-lg;
 
-    .memberCard {
-      background-color: $color-bg-card;
-      border-radius: $radius-lg;
-      padding: $spacing-lg;
+    .sectionTitle {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
       margin-bottom: $spacing-md;
-      box-shadow: $shadow-card;
 
-      .memberHeader {
+      .titleCount {
+        margin-left: auto;
+        float: right;
+        font-size: $font-size-sm;
+        color: $color-text-tertiary;
+        font-weight: $font-weight-normal;
+      }
+    }
+  }
+
+  .rolesSection {
+    .roleGroup {
+      margin-bottom: $spacing-lg;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .roleHeader {
+      display: flex;
+      align-items: center;
+      padding: $spacing-sm 0;
+      border-bottom: 1rpx solid $color-divider;
+      margin-bottom: $spacing-sm;
+
+      .roleName {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+      }
+
+      .roleGender {
+        font-size: $font-size-xs;
+        padding: 2rpx 10rpx;
+        border-radius: $radius-xs;
+        margin-left: 12rpx;
+
+        &.male {
+          background-color: rgba(22, 93, 255, 0.1);
+          color: #165DFF;
+        }
+
+        &.female {
+          background-color: rgba(255, 107, 157, 0.1);
+          color: $color-emotion;
+        }
+
+        &.any {
+          background-color: $color-bg-tag;
+          color: $color-text-tertiary;
+        }
+      }
+
+      .roleStatus {
+        margin-left: auto;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-normal;
+
+        &.filled {
+          color: $color-status-confirmed;
+        }
+
+        &.pending {
+          color: $color-status-pending;
+        }
+
+        &.empty {
+          color: $color-text-tertiary;
+        }
+      }
+    }
+
+    .memberList {
+      .memberItem {
         display: flex;
         align-items: center;
-        margin-bottom: $spacing-md;
+        padding: $spacing-sm 0;
 
         .memberAvatar {
-          width: 88rpx;
-          height: 88rpx;
+          width: 72rpx;
+          height: 72rpx;
           border-radius: $radius-round;
-          margin-right: $spacing-md;
+          margin-right: $spacing-sm;
           background-color: $color-bg-tag;
         }
 
         .memberInfo {
           flex: 1;
+          min-width: 0;
 
           .memberName {
-            font-size: $font-size-lg;
-            font-weight: $font-weight-semibold;
+            font-size: $font-size-sm;
             color: $color-text-primary;
-            margin-bottom: 4rpx;
+            font-weight: $font-weight-medium;
+            display: flex;
+            align-items: center;
+            gap: 8rpx;
           }
 
           .memberTags {
             display: flex;
             flex-wrap: wrap;
-            gap: 8rpx;
+            gap: 6rpx;
+            margin-top: 6rpx;
 
-            .tag {
+            .miniTag {
               font-size: $font-size-xs;
-              padding: 2rpx 10rpx;
+              padding: 2rpx 8rpx;
               border-radius: $radius-xs;
               background-color: $color-bg-tag;
               color: $color-text-tertiary;
             }
           }
-        }
 
-        .statusBadge {
-          flex-shrink: 0;
-        }
-      }
-
-      .memberDetail {
-        background-color: $color-bg-page;
-        border-radius: $radius-md;
-        padding: $spacing-md;
-        margin-bottom: $spacing-md;
-
-        .detailRow {
-          display: flex;
-          margin-bottom: 8rpx;
-          font-size: $font-size-sm;
-
-          &:last-child {
-            margin-bottom: 0;
+          .memberMeta {
+            font-size: $font-size-xs;
+            color: $color-text-tertiary;
+            margin-top: 6rpx;
+            @include text-ellipsis;
           }
 
-          .detailLabel {
-            width: 140rpx;
+          .remindedTag {
+            font-size: $font-size-xs;
+            color: $color-status-pending;
+            margin-top: 4rpx;
+          }
+        }
+
+        .memberActions {
+          display: flex;
+          align-items: center;
+          gap: 12rpx;
+
+          .actionBtn {
+            font-size: $font-size-xs;
+            padding: 8rpx 16rpx;
+            border-radius: $radius-xs;
+
+            &.confirmBtn {
+              background-color: rgba(0, 180, 42, 0.1);
+              color: $color-status-confirmed;
+            }
+
+            &.rejectBtn {
+              background-color: rgba(255, 77, 79, 0.1);
+              color: $color-error;
+            }
+
+            &.remindBtn {
+              background-color: rgba(255, 125, 0, 0.1);
+              color: $color-status-pending;
+
+              &.disabled {
+                opacity: 0.5;
+              }
+            }
+
+            &:active {
+              opacity: 0.8;
+            }
+          }
+
+          .memberBadge {
             flex-shrink: 0;
+          }
+        }
+      }
+    }
+
+    .emptyMember {
+      padding: $spacing-md 0;
+      font-size: $font-size-sm;
+      color: $color-text-tertiary;
+      text-align: center;
+    }
+  }
+
+  .flatSection {
+    .memberItem {
+      display: flex;
+      align-items: center;
+      padding: $spacing-md 0;
+      border-bottom: 1rpx solid $color-divider;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .memberAvatar {
+        width: 80rpx;
+        height: 80rpx;
+        border-radius: $radius-round;
+        margin-right: $spacing-md;
+        background-color: $color-bg-tag;
+      }
+
+      .memberInfo {
+        flex: 1;
+        min-width: 0;
+
+        .memberName {
+          font-size: $font-size-md;
+          color: $color-text-primary;
+          font-weight: $font-weight-medium;
+          display: flex;
+          align-items: center;
+          gap: 8rpx;
+        }
+
+        .memberTags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6rpx;
+          margin-top: 6rpx;
+
+          .miniTag {
+            font-size: $font-size-xs;
+            padding: 2rpx 8rpx;
+            border-radius: $radius-xs;
+            background-color: $color-bg-tag;
             color: $color-text-tertiary;
           }
+        }
 
-          .detailValue {
-            flex: 1;
-            color: $color-text-secondary;
-          }
+        .memberMeta {
+          font-size: $font-size-xs;
+          color: $color-text-tertiary;
+          margin-top: 6rpx;
+          @include text-ellipsis;
+        }
+
+        .remindedTag {
+          font-size: $font-size-xs;
+          color: $color-status-pending;
+          margin-top: 4rpx;
         }
       }
 
-      .actionButtons {
+      .memberActions {
         display: flex;
-        gap: $spacing-sm;
+        align-items: center;
+        gap: 12rpx;
 
         .actionBtn {
-          @include button-reset;
-          flex: 1;
-          height: 64rpx;
-          border-radius: $radius-button;
-          font-size: $font-size-sm;
-          font-weight: $font-weight-medium;
-          transition: all $transition-fast;
+          font-size: $font-size-xs;
+          padding: 10rpx 20rpx;
+          border-radius: $radius-xs;
 
-          &.secondary {
-            background-color: $color-bg-tag;
-            color: $color-text-secondary;
+          &.confirmBtn {
+            background-color: rgba(0, 180, 42, 0.1);
+            color: $color-status-confirmed;
           }
 
-          &.primary {
-            background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
-            color: $color-text-white;
-          }
-
-          &.danger {
-            background-color: rgba(245, 63, 63, 0.1);
+          &.rejectBtn {
+            background-color: rgba(255, 77, 79, 0.1);
             color: $color-error;
           }
 
+          &.remindBtn {
+            background-color: rgba(255, 125, 0, 0.1);
+            color: $color-status-pending;
+
+            &.disabled {
+              opacity: 0.5;
+            }
+          }
+
           &:active {
-            opacity: 0.9;
-            transform: scale(0.98);
+            opacity: 0.8;
           }
         }
-      }
-    }
-  }
-
-  .emptySection {
-    padding: $spacing-xl * 2 $spacing-lg;
-  }
-
-  .footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: $spacing-md $spacing-lg;
-    padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
-    background-color: $color-bg-card;
-    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
-    display: flex;
-    gap: $spacing-md;
-
-    .remindBtn {
-      @include button-reset;
-      flex: 1;
-      height: $button-height-lg;
-      border-radius: $radius-button;
-      background-color: $color-warning;
-      color: $color-text-white;
-      font-size: $font-size-md;
-      font-weight: $font-weight-semibold;
-
-      &:active {
-        opacity: 0.9;
-      }
-    }
-
-    .confirmAllBtn {
-      @include button-reset;
-      flex: 1;
-      height: $button-height-lg;
-      border-radius: $radius-button;
-      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
-      color: $color-text-white;
-      font-size: $font-size-md;
-      font-weight: $font-weight-semibold;
-
-      &:active {
-        opacity: 0.9;
       }
     }
   }

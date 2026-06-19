@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Input, Textarea, Switch, Picker } from '@tarojs/components';
+import { View, Text, Input, Textarea, Switch } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
-import { mockFleets } from '@/data/mockFleets';
+import { useFleetStore } from '@/store/fleetStore';
 import { Fleet } from '@/types/fleet';
 
 const SignupPage: React.FC = () => {
   const router = useRouter();
   const fleetId = router.params.id;
+  const getFleetById = useFleetStore((s) => s.getFleetById);
+  const addMember = useFleetStore((s) => s.addMember);
+
   const [fleet, setFleet] = useState<Fleet | null>(null);
 
   const [name, setName] = useState('');
@@ -20,26 +23,26 @@ const SignupPage: React.FC = () => {
   const [remark, setRemark] = useState('');
 
   useEffect(() => {
-    const found = mockFleets.find(f => f.id === fleetId);
+    const found = getFleetById(fleetId || '');
     if (found) {
       setFleet(found);
+      console.log('[Signup] 加载车队信息:', found.id, found.scriptName);
     }
-    console.log('[Signup] 加载车队信息:', fleetId);
-  }, [fleetId]);
+  }, [fleetId, getFleetById]);
 
   const canSubmit = name && availableTime;
 
   const handleSubmit = () => {
     if (!canSubmit) {
-      Taro.showToast({
-        title: '请填写必填信息',
-        icon: 'none'
-      });
+      Taro.showToast({ title: '请填写必填信息', icon: 'none' });
+      return;
+    }
+    if (!fleetId) {
+      Taro.showToast({ title: '参数错误', icon: 'none' });
       return;
     }
 
-    console.log('[Signup] 提交报名:', {
-      fleetId,
+    addMember(fleetId, {
       name,
       gender,
       availableTime,
@@ -49,9 +52,11 @@ const SignupPage: React.FC = () => {
       remark
     });
 
+    console.log('[Signup] 提交报名:', { fleetId, name, gender, rolePreference });
+
     Taro.showModal({
       title: '报名成功',
-      content: '已提交报名申请，请等待发起人确认',
+      content: '已提交报名申请，请等待发起人确认。你可以在"我的车队-我参与的"中查看状态。',
       showCancel: false,
       confirmText: '知道了',
       success: () => {
@@ -156,22 +161,14 @@ const SignupPage: React.FC = () => {
               是否接受反串
               <Text className={styles.switchDesc}>（女生玩男角/男生玩女角）</Text>
             </Text>
-            <Switch
-              checked={canCrossPlay}
-              onChange={(e) => setCanCrossPlay(e.detail.value)}
-              color="#7B61FF"
-            />
+            <Switch checked={canCrossPlay} onChange={(e) => setCanCrossPlay(e.detail.value)} color="#7B61FF" />
           </View>
           <View className={styles.switchItem}>
             <Text className={styles.switchLabel}>
               是否已读同系列作品
               <Text className={styles.switchDesc}>（避免剧透/影响体验）</Text>
             </Text>
-            <Switch
-              checked={hasReadSeries}
-              onChange={(e) => setHasReadSeries(e.detail.value)}
-              color="#7B61FF"
-            />
+            <Switch checked={hasReadSeries} onChange={(e) => setHasReadSeries(e.detail.value)} color="#7B61FF" />
           </View>
         </View>
       </View>
@@ -194,7 +191,7 @@ const SignupPage: React.FC = () => {
         <View className={styles.tipsList}>
           <View className={styles.tipItem}>
             <Text className={styles.tipIcon}>•</Text>
-            <Text>报名后发起人会进行确认，请耐心等待</Text>
+            <Text>报名后状态默认为"待确认"，请等待发起人审核</Text>
           </View>
           <View className={styles.tipItem}>
             <Text className={styles.tipIcon}>•</Text>
