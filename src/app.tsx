@@ -4,7 +4,7 @@ import './app.scss';
 import { useFleetStore } from '@/store/fleetStore';
 import { mockFleets } from '@/data/mockFleets';
 
-const STORE_VERSION = 'v3';
+const STORE_VERSION = 'v4';
 
 function App(props) {
   useEffect(() => {

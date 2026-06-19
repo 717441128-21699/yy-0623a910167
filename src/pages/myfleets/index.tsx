@@ -108,6 +108,13 @@ const JoinedFleetCard: React.FC<{ fleet: Fleet; myMember: FleetMember; onConfirm
             <Text className={classnames(styles.detailValue, styles.remarkText)}>{myMember.remark}</Text>
           </View>
         )}
+
+        {myMember.reviewNote && (
+          <View className={styles.detailRow}>
+            <Text className={styles.detailLabel}>发起人备注</Text>
+            <Text className={classnames(styles.detailValue, styles.remarkText)}>{myMember.reviewNote}</Text>
+          </View>
+        )}
       </View>
 
       <View className={styles.joinedCardFooter}>

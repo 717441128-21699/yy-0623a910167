@@ -6,6 +6,7 @@ import styles from './index.module.scss';
 import StatusBadge from '@/components/StatusBadge';
 import { useFleetStore } from '@/store/fleetStore';
 import { Fleet, FleetMember, RoleSlot } from '@/types/fleet';
+import { getConfirmedCount, getEmptyRoles, getGapByGender, getNeededPlayers } from '@/utils/fleetUtils';
 
 const getGenderLabel = (gender?: string) => {
   if (gender === 'male') return '♂ 男';
@@ -78,7 +79,7 @@ const FleetDetailPage: React.FC = () => {
   const safeRoleAssignments = Array.isArray(fleet.roleAssignments) ? fleet.roleAssignments : [];
   const safeMembers = Array.isArray(fleet.members) ? fleet.members : [];
 
-  const confirmedCount = safeMembers.filter((m) => m.status === 'confirmed').length;
+  const confirmedCount = getConfirmedCount(fleet);
   const pendingCount = safeMembers.filter((m) => m.status === 'pending').length;
   const waitlistCount = safeMembers.filter((m) => m.status === 'waitlist').length;
   const progress = fleet.totalPlayers > 0 ? Math.min((confirmedCount / fleet.totalPlayers) * 100, 100) : 0;
@@ -86,15 +87,12 @@ const FleetDetailPage: React.FC = () => {
   const isInitiator = fleet.initiatorId === currentUserId;
   const myMember = safeMembers.find((m) => m.userId === currentUserId);
   const hasJoined = !!myMember;
-  const canSignup = !isInitiator && !hasJoined && fleet.neededPlayers > 0;
+  const canSignup = !isInitiator && !hasJoined && getNeededPlayers(fleet) > 0;
 
   const needConfirmDriving = hasJoined && myMember!.status === 'confirmed' && !myMember!.confirmed;
 
-  const assignedRoleIds = new Set(safeRoleAssignments.filter((a) => a.status === 'confirmed').map((a) => a.roleId));
-  const emptyRoles = safeRoleSlots.filter((r) => !assignedRoleIds.has(r.id));
-  const gapMale = emptyRoles.filter((r) => r.gender === 'male').length;
-  const gapFemale = emptyRoles.filter((r) => r.gender === 'female').length;
-  const gapAny = emptyRoles.filter((r) => r.gender === 'any').length;
+  const emptyRoles = getEmptyRoles(fleet);
+  const { male: gapMale, female: gapFemale, any: gapAny } = getGapByGender(emptyRoles);
 
   const getMemberForRole = (role: RoleSlot): FleetMember | null => {
     const assignment = safeRoleAssignments.find((a) => a.roleId === role.id);
@@ -191,7 +189,7 @@ const FleetDetailPage: React.FC = () => {
         <Text className={styles.sectionTitle}>
           <Text className={styles.titleIcon}>📊</Text>
           成团进度
-          <Text className={styles.titleCount}>还差 {fleet.neededPlayers} 人</Text>
+          <Text className={styles.titleCount}>还差 {getNeededPlayers(fleet)} 人</Text>
         </Text>
         <View className={styles.progressSection}>
           <View className={styles.progressHeader}>
@@ -355,6 +353,8 @@ const FleetDetailPage: React.FC = () => {
                   {member.availableTime && `可到:${member.availableTime}`}
                   {member.rolePreference && member.availableTime && ' · '}
                   {member.rolePreference && `意向:${member.rolePreference}`}
+                  {member.reviewNote && (member.availableTime || member.rolePreference) && ' · '}
+                  {member.reviewNote && `备注:${member.reviewNote}`}
                 </Text>
               </View>
               <View className={styles.memberBadge}>
@@ -393,7 +393,7 @@ const FleetDetailPage: React.FC = () => {
           </View>
         ) : canSignup ? (
           <View className={styles.primaryBtn} onClick={handleSignup}>
-            <Text>立即报名（还差{fleet.neededPlayers}人）</Text>
+            <Text>立即报名（还差{getNeededPlayers(fleet)}人）</Text>
           </View>
         ) : hasJoined ? (
           <View className={classnames(styles.primaryBtn, styles.disabled)}>

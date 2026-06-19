@@ -626,4 +626,173 @@
       opacity: 0.6;
     }
   }
+
+  .checklistWrap {
+    padding: $spacing-md $spacing-lg;
+
+    .checklistSection {
+      background-color: $color-bg-card;
+      border-radius: $radius-lg;
+      padding: $spacing-lg;
+      margin-bottom: $spacing-md;
+
+      .checklistHeader {
+        display: flex;
+        align-items: center;
+        margin-bottom: $spacing-sm;
+
+        .checklistIcon {
+          font-size: 36rpx;
+          margin-right: 12rpx;
+        }
+
+        .checklistTitle {
+          font-size: $font-size-md;
+          font-weight: $font-weight-semibold;
+          flex: 1;
+
+          &.error {
+            color: $color-error;
+          }
+
+          &.pending {
+            color: $color-status-pending;
+          }
+
+          &.waitlist {
+            color: $color-status-waitlist;
+          }
+
+          &.info {
+            color: $color-primary;
+          }
+        }
+
+        .checklistCount {
+          font-size: $font-size-lg;
+          font-weight: $font-weight-bold;
+          color: $color-text-primary;
+        }
+      }
+
+      .checklistHint {
+        font-size: $font-size-xs;
+        color: $color-text-tertiary;
+        margin-bottom: $spacing-sm;
+      }
+
+      .checklistRemindAll {
+        display: inline-flex;
+        align-items: center;
+        padding: 6rpx 16rpx;
+        border-radius: $radius-xs;
+        background-color: rgba(255, 77, 79, 0.1);
+        color: $color-error;
+        font-size: $font-size-xs;
+        margin-bottom: $spacing-sm;
+
+        &:active {
+          background-color: rgba(255, 77, 79, 0.2);
+        }
+      }
+
+      .checklistBody {
+        border-top: 1rpx solid $color-divider;
+        padding-top: $spacing-sm;
+      }
+
+      .checklistRoleItem {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: $spacing-sm 0;
+
+        .checklistRoleName {
+          font-size: $font-size-sm;
+          color: $color-text-primary;
+        }
+
+        .checklistRoleGender {
+          font-size: $font-size-xs;
+          padding: 2rpx 10rpx;
+          border-radius: $radius-xs;
+
+          &.male {
+            background-color: rgba(22, 93, 255, 0.1);
+            color: #165DFF;
+          }
+
+          &.female {
+            background-color: rgba(255, 107, 157, 0.1);
+            color: $color-emotion;
+          }
+
+          &.any {
+            background-color: $color-bg-tag;
+            color: $color-text-tertiary;
+          }
+        }
+      }
+    }
+
+    .allClearCard {
+      background: linear-gradient(135deg, rgba(123, 97, 255, 0.08) 0%, rgba(0, 180, 42, 0.08) 100%);
+      border: 2rpx solid rgba(0, 180, 42, 0.2);
+      border-radius: $radius-lg;
+      padding: $spacing-xxl $spacing-lg;
+      text-align: center;
+
+      .allClearIcon {
+        font-size: 64rpx;
+        display: block;
+        margin-bottom: $spacing-sm;
+      }
+
+      .allClearTitle {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $color-status-confirmed;
+        display: block;
+        margin-bottom: 4rpx;
+      }
+
+      .allClearDesc {
+        font-size: $font-size-sm;
+        color: $color-text-tertiary;
+      }
+    }
+  }
+
+  .promoteBtn {
+    background-color: rgba(123, 97, 255, 0.1) !important;
+    color: $color-primary !important;
+  }
+
+  .removeBtn {
+    background-color: rgba(255, 77, 79, 0.08) !important;
+    color: $color-error !important;
+  }
+
+  .noteBody {
+    padding: $spacing-md $spacing-lg;
+
+    .noteHint {
+      font-size: $font-size-sm;
+      color: $color-text-secondary;
+      line-height: 1.5;
+      margin-bottom: $spacing-md;
+      display: block;
+    }
+
+    .noteInput {
+      width: 100%;
+      height: 180rpx;
+      padding: $spacing-md;
+      border-radius: $radius-md;
+      background-color: $color-bg-page;
+      font-size: $font-size-sm;
+      color: $color-text-primary;
+      box-sizing: border-box;
+    }
+  }
 }

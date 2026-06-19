@@ -6,6 +6,7 @@ import styles from './index.module.scss';
 import Tag from '../Tag';
 import ProgressBar from '../ProgressBar';
 import { Fleet, ScriptType, RoleSlot, FleetMember } from '@/types/fleet';
+import { getConfirmedCount, getEmptyRoles, getGapByGender, getNeededPlayers } from '@/utils/fleetUtils';
 
 export interface FleetCardProps {
   fleet: Fleet;
@@ -29,22 +30,6 @@ const typeLabelMap: Record<ScriptType, string> = {
   terror: '恐怖惊悚',
   mechanism: '机制阵营',
   other: '其他'
-};
-
-const getConfirmedCount = (fleet: Fleet): number => {
-  return fleet.members.filter((m) => m.status === 'confirmed').length;
-};
-
-const getEmptyRoles = (fleet: Fleet): RoleSlot[] => {
-  const assignedRoleIds = new Set(fleet.roleAssignments.filter((a) => a.status === 'confirmed').map((a) => a.roleId));
-  return fleet.roleSlots.filter((r) => !assignedRoleIds.has(r.id));
-};
-
-const getGapByGender = (emptyRoles: RoleSlot[]) => {
-  const male = emptyRoles.filter((r) => r.gender === 'male').length;
-  const female = emptyRoles.filter((r) => r.gender === 'female').length;
-  const any = emptyRoles.filter((r) => r.gender === 'any').length;
-  return { male, female, any };
 };
 
 const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = true }) => {
@@ -133,8 +118,8 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
           <Text className={styles.name}>{fleet.initiator.name}</Text>
         </View>
         <View className={styles.slotsInfo}>
-          {fleet.neededPlayers > 0 ? (
-            <Text>还差 <Text className={styles.highlight}>{fleet.neededPlayers}</Text> 人</Text>
+          {getNeededPlayers(fleet) > 0 ? (
+            <Text>还差 <Text className={styles.highlight}>{getNeededPlayers(fleet)}</Text> 人</Text>
           ) : (
             <Text className={styles.highlight}>已满员</Text>
           )}

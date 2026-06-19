@@ -36,6 +36,8 @@ export interface FleetMember {
   lastRemindedAt?: number;
   confirmed?: boolean;
   remark?: string;
+  reviewNote?: string;
+  reviewAction?: 'approved' | 'rejected' | undefined;
 }
 
 export interface Fleet {

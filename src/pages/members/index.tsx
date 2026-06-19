@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text } from '@tarojs/components';
+import { View, Text, Textarea } from '@tarojs/components';
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
 import styles from './index.module.scss';
 import StatusBadge from '@/components/StatusBadge';
 import { useFleetStore } from '@/store/fleetStore';
 import { Fleet, FleetMember, RoleSlot } from '@/types/fleet';
+import { getConfirmedCount, getEmptyRoles, getGapByGender, getNeededPlayers } from '@/utils/fleetUtils';
 
 const getGenderLabel = (gender?: string) => {
   if (gender === 'male') return '♂ 男';
@@ -19,6 +20,8 @@ const getGenderClass = (gender?: string) => {
   return 'any';
 };
 
+type PickerMode = 'approve' | 'promote' | null;
+
 const MembersPage: React.FC = () => {
   const router = useRouter();
   const fleetId = router.params.id;
@@ -28,17 +31,22 @@ const MembersPage: React.FC = () => {
   const removeMember = useFleetStore((s) => s.removeMember);
   const remindMember = useFleetStore((s) => s.remindMember);
   const remindAllPending = useFleetStore((s) => s.remindAllPending);
+  const promoteFromWaitlist = useFleetStore((s) => s.promoteFromWaitlist);
 
   const [fleet, setFleet] = useState<Fleet | null>(null);
-  const [activeTab, setActiveTab] = useState<'roles' | 'pending' | 'all'>('roles');
-  const [approvingMemberId, setApprovingMemberId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'checklist' | 'roles' | 'pending' | 'all'>('checklist');
+  const [pickerMode, setPickerMode] = useState<PickerMode>(null);
+  const [pickerMemberId, setPickerMemberId] = useState<string | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteMemberId, setNoteMemberId] = useState<string | null>(null);
+  const [noteRoleId, setNoteRoleId] = useState<string | null>(null);
+  const [reviewNote, setReviewNote] = useState('');
 
   const loadFleet = () => {
     const found = getFleetById(fleetId || '');
     if (found) {
       setFleet({ ...found });
-      console.log('[Members] 加载车队:', found.id, '成员数:', found.members.length);
     }
   };
 
@@ -50,27 +58,10 @@ const MembersPage: React.FC = () => {
     loadFleet();
   });
 
-  const emptyRoleSlots = useMemo(() => {
-    if (!fleet) return [];
-    return fleet.roleSlots.filter((role) => {
-      const assignment = fleet.roleAssignments.find(
-        (a) => a.roleId === role.id && a.status === 'confirmed'
-      );
-      return !assignment;
-    });
-  }, [fleet]);
-
-  const gapCounts = useMemo(() => {
-    let male = 0;
-    let female = 0;
-    let any = 0;
-    emptyRoleSlots.forEach((role) => {
-      if (role.gender === 'male') male++;
-      else if (role.gender === 'female') female++;
-      else any++;
-    });
-    return { male, female, any };
-  }, [emptyRoleSlots]);
+  const emptyRoleSlots = useMemo(() => (fleet ? getEmptyRoles(fleet) : []), [fleet]);
+  const gapCounts = useMemo(() => getGapByGender(emptyRoleSlots), [emptyRoleSlots]);
+  const realNeeded = useMemo(() => (fleet ? getNeededPlayers(fleet) : 0), [fleet]);
+  const realConfirmed = useMemo(() => (fleet ? getConfirmedCount(fleet) : 0), [fleet]);
 
   if (!fleet) {
     return (
@@ -88,38 +79,127 @@ const MembersPage: React.FC = () => {
     (m) => !m.confirmed && m.userId !== fleet.initiatorId
   );
 
-  const handleConfirmClick = (memberId: string) => {
+  const unassignedRoles = fleet.roleSlots.filter((r) => {
+    const a = fleet.roleAssignments.find((aa) => aa.roleId === r.id && aa.status === 'confirmed');
+    return !a;
+  });
+
+  const checklistGroups = [
+    {
+      key: 'unconfirmedDriving',
+      title: '已上车未确认到场',
+      icon: '🚗',
+      color: 'error' as const,
+      members: unconfirmedForDriving,
+      hint: '点击右侧提醒按钮发送确认提醒'
+    },
+    {
+      key: 'pendingReview',
+      title: '待审核报名',
+      icon: '📋',
+      color: 'pending' as const,
+      members: pendingMembers,
+      hint: '点击通过或拒绝处理报名申请'
+    },
+    {
+      key: 'waitlist',
+      title: '候补成员',
+      icon: '⏳',
+      color: 'waitlist' as const,
+      members: waitlistMembers,
+      hint: '有空位时可选择候补成员补位'
+    },
+    {
+      key: 'unassignedRoles',
+      title: '角色位未分配',
+      icon: '🎭',
+      color: 'info' as const,
+      members: [],
+      roles: unassignedRoles,
+      hint: '审核报名时选择对应角色即可分配'
+    }
+  ];
+
+  const openApproveFlow = (memberId: string) => {
     if (!fleetId) return;
     if (emptyRoleSlots.length === 0) {
-      confirmMember(fleetId, memberId);
-      Taro.showToast({ title: '已通过', icon: 'success' });
+      setNoteMemberId(memberId);
+      setNoteRoleId(null);
+      setReviewNote('');
+      setShowNoteModal(true);
+      return;
+    }
+    const member = fleet.members.find((m) => m.id === memberId);
+    let defaultRoleId: string | null = null;
+    if (member?.preferredRoleId) {
+      const ok = emptyRoleSlots.some((r) => r.id === member.preferredRoleId);
+      if (ok) defaultRoleId = member.preferredRoleId;
+    }
+    setPickerMode('approve');
+    setPickerMemberId(memberId);
+    setSelectedRoleId(defaultRoleId);
+  };
+
+  const handlePickerConfirm = () => {
+    if (!fleetId || !pickerMemberId) return;
+    if (pickerMode === 'approve') {
+      setNoteMemberId(pickerMemberId);
+      setNoteRoleId(selectedRoleId);
+      setReviewNote('');
+      setPickerMode(null);
+      setPickerMemberId(null);
+      setShowNoteModal(true);
+    } else if (pickerMode === 'promote') {
+      promoteFromWaitlist(fleetId, pickerMemberId, selectedRoleId || undefined);
+      Taro.showToast({ title: '补位成功', icon: 'success' });
+      setPickerMode(null);
+      setPickerMemberId(null);
+      setSelectedRoleId(null);
+      setTimeout(loadFleet, 200);
+    }
+  };
+
+  const handlePickerClose = () => {
+    setPickerMode(null);
+    setPickerMemberId(null);
+    setSelectedRoleId(null);
+  };
+
+  const handleNoteConfirm = () => {
+    if (!fleetId || !noteMemberId) return;
+    confirmMember(fleetId, noteMemberId, noteRoleId || undefined, reviewNote.trim() || undefined);
+    Taro.showToast({ title: '已通过', icon: 'success' });
+    setShowNoteModal(false);
+    setNoteMemberId(null);
+    setNoteRoleId(null);
+    setReviewNote('');
+    setTimeout(loadFleet, 200);
+  };
+
+  const handleNoteCancel = () => {
+    setShowNoteModal(false);
+    setNoteMemberId(null);
+    setNoteRoleId(null);
+    setReviewNote('');
+  };
+
+  const openPromoteFlow = (memberId: string) => {
+    if (!fleetId) return;
+    if (emptyRoleSlots.length === 0) {
+      promoteFromWaitlist(fleetId, memberId);
+      Taro.showToast({ title: '补位成功', icon: 'success' });
       setTimeout(loadFleet, 200);
       return;
     }
     const member = fleet.members.find((m) => m.id === memberId);
     let defaultRoleId: string | null = null;
     if (member?.preferredRoleId) {
-      const isPreferredEmpty = emptyRoleSlots.some((r) => r.id === member.preferredRoleId);
-      if (isPreferredEmpty) {
-        defaultRoleId = member.preferredRoleId;
-      }
+      const ok = emptyRoleSlots.some((r) => r.id === member.preferredRoleId);
+      if (ok) defaultRoleId = member.preferredRoleId;
     }
-    setApprovingMemberId(memberId);
+    setPickerMode('promote');
+    setPickerMemberId(memberId);
     setSelectedRoleId(defaultRoleId);
-  };
-
-  const handleRolePickerConfirm = () => {
-    if (!fleetId || !approvingMemberId) return;
-    confirmMember(fleetId, approvingMemberId, selectedRoleId || undefined);
-    Taro.showToast({ title: '已通过', icon: 'success' });
-    setApprovingMemberId(null);
-    setSelectedRoleId(null);
-    setTimeout(loadFleet, 200);
-  };
-
-  const handleRolePickerClose = () => {
-    setApprovingMemberId(null);
-    setSelectedRoleId(null);
   };
 
   const handleReject = (memberId: string) => {
@@ -131,6 +211,21 @@ const MembersPage: React.FC = () => {
         if (res.confirm) {
           removeMember(fleetId, memberId);
           Taro.showToast({ title: '已拒绝', icon: 'none' });
+          setTimeout(loadFleet, 200);
+        }
+      }
+    });
+  };
+
+  const handleRemove = (memberId: string) => {
+    if (!fleetId) return;
+    Taro.showModal({
+      title: '确认移除',
+      content: '确认移除该成员后，可从候补名单中选择补位',
+      success: (res) => {
+        if (res.confirm) {
+          removeMember(fleetId, memberId);
+          Taro.showToast({ title: '已移除', icon: 'none' });
           setTimeout(loadFleet, 200);
         }
       }
@@ -159,17 +254,13 @@ const MembersPage: React.FC = () => {
 
   const getPendingForRole = (role: RoleSlot): FleetMember[] => {
     return fleet.members.filter(
-      (m) =>
-        m.status === 'pending' &&
-        m.preferredRoleId === role.id
+      (m) => m.status === 'pending' && m.preferredRoleId === role.id
     );
   };
 
   const getWaitlistForRole = (role: RoleSlot): FleetMember[] => {
     return fleet.members.filter(
-      (m) =>
-        m.status === 'waitlist' &&
-        m.preferredRoleId === role.id
+      (m) => m.status === 'waitlist' && m.preferredRoleId === role.id
     );
   };
 
@@ -183,25 +274,27 @@ const MembersPage: React.FC = () => {
 
   const renderMemberItem = (
     member: FleetMember,
-    compact: boolean = false,
-    showRemind: boolean = false
+    showRemind: boolean = false,
+    extraActions?: React.ReactNode
   ) => {
     const isRecentlyReminded =
       member.lastRemindedAt && Date.now() - member.lastRemindedAt < 60000;
     const isInitiator = member.userId === fleet.initiatorId;
 
     return (
-      <View key={member.id} className={compact ? styles.memberItem : styles.memberItem}>
-        <View className={compact ? styles.memberAvatar : styles.memberAvatar} />
+      <View key={member.id} className={styles.memberItem}>
+        <View className={styles.memberAvatar} />
         <View className={styles.memberInfo}>
           <Text className={styles.memberName}>
             {member.name}
             {isInitiator && <Text className={styles.miniTag}>发起人</Text>}
           </Text>
           <View className={styles.memberTags}>
-            <Text className={styles.miniTag}>
-              {member.gender === 'male' ? '♂ 男' : member.gender === 'female' ? '♀ 女' : ''}
-            </Text>
+            {member.gender && member.gender !== 'unknown' && (
+              <Text className={styles.miniTag}>
+                {member.gender === 'male' ? '♂ 男' : '♀ 女'}
+              </Text>
+            )}
             {member.canCrossPlay && <Text className={styles.miniTag}>可反串</Text>}
             {member.hasReadSeries && <Text className={styles.miniTag}>已读同系列</Text>}
             {member.assignedRoleId && (() => {
@@ -214,8 +307,8 @@ const MembersPage: React.FC = () => {
             {member.availableTime && `可到:${member.availableTime}`}
             {member.rolePreference && member.availableTime && ' · '}
             {member.rolePreference && `意向:${member.rolePreference}`}
-            {member.remark && (member.availableTime || member.rolePreference) && ' · '}
-            {member.remark}
+            {member.reviewNote && (member.availableTime || member.rolePreference) && ' · '}
+            {member.reviewNote && `备注:${member.reviewNote}`}
           </Text>
           {isRecentlyReminded && (
             <Text className={styles.remindedTag}>
@@ -228,7 +321,7 @@ const MembersPage: React.FC = () => {
             <>
               <View
                 className={classnames(styles.actionBtn, styles.confirmBtn)}
-                onClick={() => handleConfirmClick(member.id)}
+                onClick={() => openApproveFlow(member.id)}
               >
                 <Text>通过</Text>
               </View>
@@ -239,6 +332,14 @@ const MembersPage: React.FC = () => {
                 <Text>拒绝</Text>
               </View>
             </>
+          )}
+          {member.status === 'waitlist' && (
+            <View
+              className={classnames(styles.actionBtn, styles.promoteBtn)}
+              onClick={() => openPromoteFlow(member.id)}
+            >
+              <Text>补位</Text>
+            </View>
           )}
           {member.status === 'confirmed' && !isInitiator && (
             <>
@@ -254,12 +355,16 @@ const MembersPage: React.FC = () => {
                   <Text>{isRecentlyReminded ? '已提醒' : '提醒'}</Text>
                 </View>
               )}
+              <View
+                className={classnames(styles.actionBtn, styles.removeBtn)}
+                onClick={() => handleRemove(member.id)}
+              >
+                <Text>移除</Text>
+              </View>
               <StatusBadge status={member.status} />
             </>
           )}
-          {member.status === 'waitlist' && (
-            <StatusBadge status={member.status} />
-          )}
+          {extraActions}
           {isInitiator && <StatusBadge status="confirmed" />}
         </View>
       </View>
@@ -267,12 +372,13 @@ const MembersPage: React.FC = () => {
   };
 
   const hasGap = gapCounts.male > 0 || gapCounts.female > 0 || gapCounts.any > 0;
+  const pickerTitle = pickerMode === 'approve' ? '分配角色' : '选择补位角色';
 
   return (
     <View className={styles.membersPage}>
       <View className={styles.summaryBar}>
         <View className={styles.summaryItem}>
-          <Text className={styles.summaryNum}>{confirmedMembers.length}</Text>
+          <Text className={styles.summaryNum}>{realConfirmed}</Text>
           <Text className={styles.summaryLabel}>已上车</Text>
         </View>
         <View className={styles.divider} />
@@ -287,81 +393,40 @@ const MembersPage: React.FC = () => {
           </Text>
           <Text className={styles.summaryLabel}>待确认开车</Text>
         </View>
+        <View className={styles.divider} />
+        <View className={styles.summaryItem}>
+          <Text className={styles.summaryNum}>{realNeeded}</Text>
+          <Text className={styles.summaryLabel}>还差</Text>
+        </View>
       </View>
 
       {hasGap && (
         <View className={styles.gapBar}>
           {gapCounts.male > 0 && (
             <View className={classnames(styles.gapItem, styles.male)}>
-              <Text>♂ 缺{gapCounts.male}个男角</Text>
+              <Text>♂ 缺{gapCounts.male}男角</Text>
             </View>
           )}
           {gapCounts.female > 0 && (
             <View className={classnames(styles.gapItem, styles.female)}>
-              <Text>♀ 缺{gapCounts.female}个女角</Text>
+              <Text>♀ 缺{gapCounts.female}女角</Text>
             </View>
           )}
           {gapCounts.any > 0 && (
             <View className={classnames(styles.gapItem, styles.any)}>
-              <Text>○ 缺{gapCounts.any}个不限</Text>
+              <Text>○ 缺{gapCounts.any}不限</Text>
             </View>
           )}
         </View>
       )}
 
-      {unconfirmedForDriving.length > 0 && (
-        <View className={styles.unconfirmedSection}>
-          <View className={styles.unconfirmedHeader}>
-            <Text className={styles.unconfirmedTitle}>
-              <Text className={styles.warnIcon}>⚠️</Text>
-              {unconfirmedForDriving.length}人未确认能否到场
-            </Text>
-            <View
-              className={classnames(styles.remindAllBtn)}
-              onClick={handleRemindAll}
-            >
-              <Text>一键提醒全部</Text>
-            </View>
-          </View>
-          <View className={styles.unconfirmedList}>
-            {unconfirmedForDriving.map((member) => {
-              const isRecentlyReminded =
-                member.lastRemindedAt && Date.now() - member.lastRemindedAt < 60000;
-              return (
-                <View key={member.id} className={styles.unconfirmedItem}>
-                  <View className={styles.unconfirmedAvatar} />
-                  <View className={styles.unconfirmedInfo}>
-                    <Text className={styles.unconfirmedName}>{member.name}</Text>
-                    <Text className={styles.unconfirmedRole}>
-                      {member.assignedRoleId && (() => {
-                        const role = fleet.roleSlots.find((r) => r.id === member.assignedRoleId);
-                        return role ? role.name : '';
-                      })()}
-                      {member.availableTime && ` · 可到:${member.availableTime}`}
-                    </Text>
-                    {isRecentlyReminded && (
-                      <Text className={styles.remindedTag}>
-                        已提醒（{Math.ceil((Date.now() - (member.lastRemindedAt || 0)) / 1000)}秒前）
-                      </Text>
-                    )}
-                  </View>
-                  <View
-                    className={classnames(
-                      styles.remindBtn,
-                      isRecentlyReminded && styles.disabled
-                    )}
-                    onClick={() => !isRecentlyReminded && handleRemind(member.id)}
-                  >
-                    <Text>{isRecentlyReminded ? '已提醒' : '提醒'}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
       <View className={styles.tabBar}>
+        <View
+          className={classnames(styles.tabItem, activeTab === 'checklist' && styles.active)}
+          onClick={() => setActiveTab('checklist')}
+        >
+          <Text>发车前清单</Text>
+        </View>
         <View
           className={classnames(styles.tabItem, activeTab === 'roles' && styles.active)}
           onClick={() => setActiveTab('roles')}
@@ -372,15 +437,69 @@ const MembersPage: React.FC = () => {
           className={classnames(styles.tabItem, activeTab === 'pending' && styles.active)}
           onClick={() => setActiveTab('pending')}
         >
-          <Text>待审核 ({pendingMembers.length})</Text>
+          <Text>待审核</Text>
         </View>
         <View
           className={classnames(styles.tabItem, activeTab === 'all' && styles.active)}
           onClick={() => setActiveTab('all')}
         >
-          <Text>全部成员</Text>
+          <Text>全部</Text>
         </View>
       </View>
+
+      {activeTab === 'checklist' && (
+        <View className={styles.checklistWrap}>
+          {checklistGroups.map((group) => {
+            const count =
+              group.key === 'unassignedRoles'
+                ? (group.roles || []).length
+                : group.members.length;
+            if (count === 0) return null;
+            return (
+              <View key={group.key} className={styles.checklistSection}>
+                <View className={styles.checklistHeader}>
+                  <Text className={styles.checklistIcon}>{group.icon}</Text>
+                  <Text className={classnames(styles.checklistTitle, group.color)}>
+                    {group.title}
+                  </Text>
+                  <Text className={styles.checklistCount}>{count}</Text>
+                </View>
+                <Text className={styles.checklistHint}>{group.hint}</Text>
+
+                {group.key === 'unconfirmedDriving' && (
+                  <View className={styles.checklistRemindAll} onClick={handleRemindAll}>
+                    <Text>一键提醒全部</Text>
+                  </View>
+                )}
+
+                <View className={styles.checklistBody}>
+                  {group.key === 'unassignedRoles'
+                    ? (group.roles || []).map((role) => (
+                        <View key={role.id} className={styles.checklistRoleItem}>
+                          <Text className={styles.checklistRoleName}>{role.name}</Text>
+                          <Text className={classnames(styles.checklistRoleGender, getGenderClass(role.gender))}>
+                            {getGenderLabel(role.gender)}
+                          </Text>
+                        </View>
+                      ))
+                    : group.members.map((m) => renderMemberItem(m, true))}
+                </View>
+              </View>
+            );
+          })}
+
+          {checklistGroups.every(
+            (g) =>
+              (g.key === 'unassignedRoles' ? (g.roles || []).length : g.members.length) === 0
+          ) && (
+            <View className={styles.allClearCard}>
+              <Text className={styles.allClearIcon}>🎉</Text>
+              <Text className={styles.allClearTitle}>发车准备就绪</Text>
+              <Text className={styles.allClearDesc}>所有成员已确认到场，角色全部就位</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {activeTab === 'roles' && fleet.roleSlots.length > 0 && (
         <View className={styles.section}>
@@ -404,16 +523,17 @@ const MembersPage: React.FC = () => {
                     </Text>
                     <Text className={classnames(styles.roleStatus, status)}>
                       {status === 'filled' && '✓ 已就位'}
-                      {status === 'pending' && `待确认（${pendings.length + (assigned?.status === 'pending' ? 1 : 0)}人）`}
+                      {status === 'pending' &&
+                        `待确认（${pendings.length + (assigned?.status === 'pending' ? 1 : 0)}人）`}
                       {status === 'empty' && '虚位以待'}
                     </Text>
                   </View>
                   <View className={styles.memberList}>
-                    {assigned && renderMemberItem(assigned, true, true)}
+                    {assigned && renderMemberItem(assigned, true)}
                     {pendings
                       .filter((p) => !assigned || p.id !== assigned.id)
-                      .map((p) => renderMemberItem(p, true, false))}
-                    {waitlist.map((w) => renderMemberItem(w, true, false))}
+                      .map((p) => renderMemberItem(p, false))}
+                    {waitlist.map((w) => renderMemberItem(w, false))}
                     {!assigned && pendings.length === 0 && waitlist.length === 0 && (
                       <View className={styles.emptyMember}>暂无报名人选</View>
                     )}
@@ -439,8 +559,8 @@ const MembersPage: React.FC = () => {
                     </Text>
                   </View>
                   <View className={styles.memberList}>
-                    {unassignedPending.map((p) => renderMemberItem(p, true, false))}
-                    {unassignedWaitlist.map((w) => renderMemberItem(w, true, false))}
+                    {unassignedPending.map((p) => renderMemberItem(p, false))}
+                    {unassignedWaitlist.map((w) => renderMemberItem(w, false))}
                   </View>
                 </View>
               );
@@ -457,7 +577,7 @@ const MembersPage: React.FC = () => {
           </Text>
           {pendingMembers.length > 0 ? (
             <View className={styles.flatSection}>
-              {pendingMembers.map((m) => renderMemberItem(m, false, false))}
+              {pendingMembers.map((m) => renderMemberItem(m, false))}
             </View>
           ) : (
             <View className={styles.emptyMember}>暂无待审核成员</View>
@@ -472,17 +592,17 @@ const MembersPage: React.FC = () => {
             <Text className={styles.titleCount}>{fleet.members.length}人</Text>
           </Text>
           <View className={styles.flatSection}>
-            {fleet.members.map((m) => renderMemberItem(m, false, true))}
+            {fleet.members.map((m) => renderMemberItem(m, true))}
           </View>
         </View>
       )}
 
-      {approvingMemberId && (
-        <View className={styles.rolePickerMask} onClick={handleRolePickerClose}>
+      {pickerMode && (
+        <View className={styles.rolePickerMask} onClick={handlePickerClose}>
           <View className={styles.rolePickerContent} onClick={(e) => e.stopPropagation()}>
             <View className={styles.rolePickerHeader}>
-              <Text className={styles.rolePickerTitle}>分配角色</Text>
-              <View className={styles.rolePickerClose} onClick={handleRolePickerClose}>
+              <Text className={styles.rolePickerTitle}>{pickerTitle}</Text>
+              <View className={styles.rolePickerClose} onClick={handlePickerClose}>
                 <Text>✕</Text>
               </View>
             </View>
@@ -510,9 +630,37 @@ const MembersPage: React.FC = () => {
             </View>
             <View
               className={classnames(styles.rolePickerConfirm, !selectedRoleId && styles.disabled)}
-              onClick={() => selectedRoleId && handleRolePickerConfirm()}
+              onClick={() => selectedRoleId && handlePickerConfirm()}
             >
-              <Text>确认分配</Text>
+              <Text>{pickerMode === 'approve' ? '下一步：写审核备注' : '确认补位'}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showNoteModal && (
+        <View className={styles.rolePickerMask} onClick={handleNoteCancel}>
+          <View className={styles.rolePickerContent} onClick={(e) => e.stopPropagation()}>
+            <View className={styles.rolePickerHeader}>
+              <Text className={styles.rolePickerTitle}>审核备注（选填）</Text>
+              <View className={styles.rolePickerClose} onClick={handleNoteCancel}>
+                <Text>✕</Text>
+              </View>
+            </View>
+            <View className={styles.noteBody}>
+              <Text className={styles.noteHint}>
+                可给报名人写一句审核备注，比如注意事项、集合地点等，报名人能在我的车队和详情页看到
+              </Text>
+              <Textarea
+                className={styles.noteInput}
+                placeholder="例如：请13:50提前到店读本，车费218元现场付"
+                value={reviewNote}
+                onInput={(e) => setReviewNote(e.detail.value)}
+                maxlength={120}
+              />
+            </View>
+            <View className={styles.rolePickerConfirm} onClick={handleNoteConfirm}>
+              <Text>确认通过</Text>
             </View>
           </View>
         </View>

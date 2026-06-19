@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Fleet, FleetMember, RoleSlot, MemberStatus, SignupForm, PublishForm } from '@/types/fleet';
+import { getConfirmedCount } from '@/utils/fleetUtils';
 
 interface FleetState {
   fleets: Fleet[];
@@ -12,7 +13,8 @@ interface FleetState {
   addMember: (fleetId: string, form: SignupForm) => void;
   updateMemberStatus: (fleetId: string, memberId: string, status: MemberStatus) => void;
   removeMember: (fleetId: string, memberId: string) => void;
-  confirmMember: (fleetId: string, memberId: string, roleId?: string) => void;
+  confirmMember: (fleetId: string, memberId: string, roleId?: string, reviewNote?: string) => void;
+  promoteFromWaitlist: (fleetId: string, memberId: string, roleId?: string) => void;
   remindMember: (fleetId: string, memberId: string) => void;
   remindAllPending: (fleetId: string) => void;
   confirmSelfDriving: (fleetId: string, userId: string) => void;
@@ -192,17 +194,22 @@ export const useFleetStore = create<FleetState>()(
         set((state) => ({
           fleets: state.fleets.map((fleet) => {
             if (fleet.id !== fleetId) return fleet;
+            const updatedMembers = fleet.members.filter((m) => m.id !== memberId);
+            const updatedAssignments = fleet.roleAssignments.filter((a) => a.memberId !== memberId);
+            const updatedFleet = { ...fleet, members: updatedMembers, roleAssignments: updatedAssignments };
+            const confirmedCount = getConfirmedCount(updatedFleet);
+            const isFull = confirmedCount >= fleet.totalPlayers;
             return {
-              ...fleet,
-              members: fleet.members.filter((m) => m.id !== memberId),
-              roleAssignments: fleet.roleAssignments.filter((a) => a.memberId !== memberId)
+              ...updatedFleet,
+              neededPlayers: Math.max(0, fleet.totalPlayers - confirmedCount),
+              status: isFull ? 'full' : fleet.status
             };
           })
         }));
         console.log('[Store] 移除成员:', fleetId, memberId);
       },
 
-      confirmMember: (fleetId: string, memberId: string, roleId?: string) => {
+      confirmMember: (fleetId: string, memberId: string, roleId?: string, reviewNote?: string) => {
         set((state) => ({
           fleets: state.fleets.map((fleet) => {
             if (fleet.id !== fleetId) return fleet;
@@ -213,7 +220,8 @@ export const useFleetStore = create<FleetState>()(
                     ...m,
                     status: 'confirmed' as MemberStatus,
                     confirmed: false,
-                    assignedRoleId: roleId || m.preferredRoleId || m.assignedRoleId
+                    assignedRoleId: roleId || m.preferredRoleId || m.assignedRoleId,
+                    ...(reviewNote ? { reviewNote, reviewAction: 'approved' as const } : {})
                   }
                 : m
             );
@@ -227,19 +235,62 @@ export const useFleetStore = create<FleetState>()(
               ];
             }
 
-            const confirmedCount = updatedMembers.filter((m) => m.status === 'confirmed').length;
+            const updatedFleet = { ...fleet, members: updatedMembers, roleAssignments: updatedAssignments };
+            const confirmedCount = getConfirmedCount(updatedFleet);
             const isFull = confirmedCount >= fleet.totalPlayers;
 
             return {
-              ...fleet,
-              members: updatedMembers,
-              roleAssignments: updatedAssignments,
+              ...updatedFleet,
               neededPlayers: isFull ? 0 : Math.max(0, fleet.totalPlayers - confirmedCount),
               status: isFull ? 'full' : fleet.status
             };
           })
         }));
         console.log('[Store] 确认成员上车:', fleetId, memberId, roleId);
+      },
+
+      promoteFromWaitlist: (fleetId: string, memberId: string, roleId?: string) => {
+        set((state) => ({
+          fleets: state.fleets.map((fleet) => {
+            if (fleet.id !== fleetId) return fleet;
+
+            const updatedMembers = fleet.members.map((m) =>
+              m.id === memberId
+                ? {
+                    ...m,
+                    status: 'confirmed' as MemberStatus,
+                    confirmed: false,
+                    assignedRoleId: roleId || m.assignedRoleId
+                  }
+                : m
+            );
+
+            let updatedAssignments = fleet.roleAssignments;
+            if (roleId) {
+              updatedAssignments = fleet.roleAssignments.filter((a) => a.memberId !== memberId);
+              const existingIdx = updatedAssignments.findIndex((a) => a.memberId === memberId);
+              if (existingIdx >= 0) {
+                updatedAssignments[existingIdx] = { ...updatedAssignments[existingIdx], roleId, status: 'confirmed' as MemberStatus };
+              } else {
+                updatedAssignments = [
+                  ...updatedAssignments,
+                  { roleId, memberId, status: 'confirmed' as MemberStatus }
+                ];
+              }
+            }
+
+            const updatedFleet = { ...fleet, members: updatedMembers, roleAssignments: updatedAssignments };
+            const confirmedCount = getConfirmedCount(updatedFleet);
+            const isFull = confirmedCount >= fleet.totalPlayers;
+
+            return {
+              ...updatedFleet,
+              neededPlayers: Math.max(0, fleet.totalPlayers - confirmedCount),
+              status: isFull ? 'full' : fleet.status
+            };
+          })
+        }));
+        console.log('[Store] 候补转正:', fleetId, memberId, roleId);
       },
 
       remindMember: (fleetId: string, memberId: string) => {
