@@ -24,6 +24,7 @@ const FleetDetailPage: React.FC = () => {
   const fleetId = router.params.id;
   const getFleetById = useFleetStore((s) => s.getFleetById);
   const currentUserId = useFleetStore((s) => s.currentUserId);
+  const confirmSelfDriving = useFleetStore((s) => s.confirmSelfDriving);
 
   const [fleet, setFleet] = useState<Fleet | null>(null);
 
@@ -56,6 +57,13 @@ const FleetDetailPage: React.FC = () => {
     Taro.showToast({ title: '复制联系方式成功', icon: 'success' });
   };
 
+  const handleConfirmDriving = () => {
+    if (!fleetId) return;
+    confirmSelfDriving(fleetId, currentUserId);
+    Taro.showToast({ title: '已确认到场', icon: 'success' });
+    setTimeout(loadFleet, 200);
+  };
+
   if (!fleet) {
     return (
       <View className={styles.fleetDetailPage}>
@@ -76,8 +84,17 @@ const FleetDetailPage: React.FC = () => {
   const progress = fleet.totalPlayers > 0 ? Math.min((confirmedCount / fleet.totalPlayers) * 100, 100) : 0;
 
   const isInitiator = fleet.initiatorId === currentUserId;
-  const hasJoined = safeMembers.some((m) => m.userId === currentUserId);
+  const myMember = safeMembers.find((m) => m.userId === currentUserId);
+  const hasJoined = !!myMember;
   const canSignup = !isInitiator && !hasJoined && fleet.neededPlayers > 0;
+
+  const needConfirmDriving = hasJoined && myMember!.status === 'confirmed' && !myMember!.confirmed;
+
+  const assignedRoleIds = new Set(safeRoleAssignments.filter((a) => a.status === 'confirmed').map((a) => a.roleId));
+  const emptyRoles = safeRoleSlots.filter((r) => !assignedRoleIds.has(r.id));
+  const gapMale = emptyRoles.filter((r) => r.gender === 'male').length;
+  const gapFemale = emptyRoles.filter((r) => r.gender === 'female').length;
+  const gapAny = emptyRoles.filter((r) => r.gender === 'any').length;
 
   const getMemberForRole = (role: RoleSlot): FleetMember | null => {
     const assignment = safeRoleAssignments.find((a) => a.roleId === role.id);
@@ -113,6 +130,27 @@ const FleetDetailPage: React.FC = () => {
           </View>
         </View>
       </View>
+
+      {needConfirmDriving && (
+        <View className={styles.confirmReminder}>
+          <View className={styles.confirmReminderContent}>
+            <Text className={styles.confirmReminderIcon}>🔔</Text>
+            <View className={styles.confirmReminderText}>
+              <Text className={styles.confirmReminderTitle}>请确认能否到场</Text>
+              <Text className={styles.confirmReminderDesc}>
+                你已上车但未确认到场，发车前请确认
+                {myMember!.assignedRoleId && (() => {
+                  const role = safeRoleSlots.find((r) => r.id === myMember!.assignedRoleId);
+                  return role ? `（你的角色：${role.name}）` : '';
+                })()}
+              </Text>
+            </View>
+          </View>
+          <View className={styles.confirmReminderBtn} onClick={handleConfirmDriving}>
+            <Text>确认到场</Text>
+          </View>
+        </View>
+      )}
 
       <View className={styles.section}>
         <Text className={styles.sectionTitle}>
@@ -185,6 +223,26 @@ const FleetDetailPage: React.FC = () => {
               </Text>
             </View>
           </View>
+
+          {emptyRoles.length > 0 && (
+            <View className={styles.genderGapBar}>
+              {gapMale > 0 && (
+                <View className={classnames(styles.genderGapItem, styles.male)}>
+                  <Text>♂ 缺{gapMale}男角</Text>
+                </View>
+              )}
+              {gapFemale > 0 && (
+                <View className={classnames(styles.genderGapItem, styles.female)}>
+                  <Text>♀ 缺{gapFemale}女角</Text>
+                </View>
+              )}
+              {gapAny > 0 && (
+                <View className={classnames(styles.genderGapItem, styles.any)}>
+                  <Text>○ 缺{gapAny}不限</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </View>
 
@@ -289,6 +347,9 @@ const FleetDetailPage: React.FC = () => {
                     const role = safeRoleSlots.find((r) => r.id === member.assignedRoleId);
                     return role ? <Text className={styles.miniTag}>{role.name}</Text> : null;
                   })()}
+                  {member.confirmed && member.userId !== fleet.initiatorId && (
+                    <Text className={styles.miniTag}>✓ 已确认到场</Text>
+                  )}
                 </View>
                 <Text className={styles.memberMeta}>
                   {member.availableTime && `可到:${member.availableTime}`}

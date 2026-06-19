@@ -58,6 +58,64 @@
     }
   }
 
+  .confirmReminder {
+    margin: $spacing-md $spacing-lg;
+    padding: $spacing-lg;
+    background: linear-gradient(135deg, rgba(255, 77, 79, 0.08) 0%, rgba(255, 125, 0, 0.08) 100%);
+    border: 2rpx solid rgba(255, 77, 79, 0.2);
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .confirmReminderContent {
+      display: flex;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+
+      .confirmReminderIcon {
+        font-size: $font-size-lg;
+        margin-right: $spacing-sm;
+        margin-top: 2rpx;
+      }
+
+      .confirmReminderText {
+        flex: 1;
+        min-width: 0;
+
+        .confirmReminderTitle {
+          font-size: $font-size-md;
+          font-weight: $font-weight-semibold;
+          color: $color-error;
+          display: block;
+          margin-bottom: 4rpx;
+        }
+
+        .confirmReminderDesc {
+          font-size: $font-size-xs;
+          color: $color-text-tertiary;
+          display: block;
+        }
+      }
+    }
+
+    .confirmReminderBtn {
+      flex-shrink: 0;
+      margin-left: $spacing-md;
+      padding: 12rpx 28rpx;
+      border-radius: $radius-button;
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      color: $color-text-white;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+
+      &:active {
+        opacity: 0.9;
+      }
+    }
+  }
+
   .section {
     background-color: $color-bg-card;
     margin: $spacing-md $spacing-lg;
@@ -228,6 +286,33 @@
             color: $color-text-primary;
             margin-left: 4rpx;
           }
+        }
+      }
+    }
+
+    .genderGapBar {
+      display: flex;
+      gap: 12rpx;
+      margin-top: $spacing-md;
+
+      .genderGapItem {
+        padding: 8rpx 18rpx;
+        border-radius: $radius-sm;
+        font-size: $font-size-xs;
+
+        &.male {
+          background-color: rgba(22, 93, 255, 0.1);
+          color: #165DFF;
+        }
+
+        &.female {
+          background-color: rgba(255, 107, 157, 0.1);
+          color: $color-emotion;
+        }
+
+        &.any {
+          background-color: $color-bg-tag;
+          color: $color-text-tertiary;
         }
       }
     }

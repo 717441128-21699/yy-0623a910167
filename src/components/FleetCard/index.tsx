@@ -40,6 +40,13 @@ const getEmptyRoles = (fleet: Fleet): RoleSlot[] => {
   return fleet.roleSlots.filter((r) => !assignedRoleIds.has(r.id));
 };
 
+const getGapByGender = (emptyRoles: RoleSlot[]) => {
+  const male = emptyRoles.filter((r) => r.gender === 'male').length;
+  const female = emptyRoles.filter((r) => r.gender === 'female').length;
+  const any = emptyRoles.filter((r) => r.gender === 'any').length;
+  return { male, female, any };
+};
+
 const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = true }) => {
   const handleClick = () => {
     Taro.navigateTo({
@@ -49,6 +56,7 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
 
   const confirmedCount = getConfirmedCount(fleet);
   const emptyRoles = getEmptyRoles(fleet);
+  const gaps = getGapByGender(emptyRoles);
 
   return (
     <View className={classnames(styles.fleetCard, className)} onClick={handleClick}>
@@ -88,15 +96,34 @@ const FleetCard: React.FC<FleetCardProps> = ({ fleet, className, showProgress = 
 
       {fleet.roleSlots.length > 0 && emptyRoles.length > 0 && (
         <View className={styles.roleHint}>
-          <Text className={styles.roleHintLabel}>缺：</Text>
-          {emptyRoles.slice(0, 3).map((role) => (
-            <Text key={role.id} className={styles.roleHintItem}>
-              {role.name}{role.gender !== 'any' ? (role.gender === 'male' ? '♂' : '♀') : ''}
-            </Text>
-          ))}
-          {emptyRoles.length > 3 && (
-            <Text className={styles.roleHintMore}>+{emptyRoles.length - 3}</Text>
-          )}
+          <View className={styles.genderGapRow}>
+            {gaps.male > 0 && (
+              <View className={classnames(styles.genderGapItem, styles.male)}>
+                <Text>♂ 缺{gaps.male}男角</Text>
+              </View>
+            )}
+            {gaps.female > 0 && (
+              <View className={classnames(styles.genderGapItem, styles.female)}>
+                <Text>♀ 缺{gaps.female}女角</Text>
+              </View>
+            )}
+            {gaps.any > 0 && (
+              <View className={classnames(styles.genderGapItem, styles.any)}>
+                <Text>○ 缺{gaps.any}不限</Text>
+              </View>
+            )}
+          </View>
+          <View className={styles.roleNameRow}>
+            <Text className={styles.roleHintLabel}>缺：</Text>
+            {emptyRoles.slice(0, 3).map((role) => (
+              <Text key={role.id} className={styles.roleHintItem}>
+                {role.name}{role.gender !== 'any' ? (role.gender === 'male' ? '♂' : '♀') : ''}
+              </Text>
+            ))}
+            {emptyRoles.length > 3 && (
+              <Text className={styles.roleHintMore}>+{emptyRoles.length - 3}</Text>
+            )}
+          </View>
         </View>
       )}
 

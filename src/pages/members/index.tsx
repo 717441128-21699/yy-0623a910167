@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text } from '@tarojs/components';
 import Taro, { useRouter, useDidShow } from '@tarojs/taro';
 import classnames from 'classnames';
@@ -31,6 +31,8 @@ const MembersPage: React.FC = () => {
 
   const [fleet, setFleet] = useState<Fleet | null>(null);
   const [activeTab, setActiveTab] = useState<'roles' | 'pending' | 'all'>('roles');
+  const [approvingMemberId, setApprovingMemberId] = useState<string | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
 
   const loadFleet = () => {
     const found = getFleetById(fleetId || '');
@@ -48,6 +50,28 @@ const MembersPage: React.FC = () => {
     loadFleet();
   });
 
+  const emptyRoleSlots = useMemo(() => {
+    if (!fleet) return [];
+    return fleet.roleSlots.filter((role) => {
+      const assignment = fleet.roleAssignments.find(
+        (a) => a.roleId === role.id && a.status === 'confirmed'
+      );
+      return !assignment;
+    });
+  }, [fleet]);
+
+  const gapCounts = useMemo(() => {
+    let male = 0;
+    let female = 0;
+    let any = 0;
+    emptyRoleSlots.forEach((role) => {
+      if (role.gender === 'male') male++;
+      else if (role.gender === 'female') female++;
+      else any++;
+    });
+    return { male, female, any };
+  }, [emptyRoleSlots]);
+
   if (!fleet) {
     return (
       <View className={styles.membersPage}>
@@ -64,11 +88,38 @@ const MembersPage: React.FC = () => {
     (m) => !m.confirmed && m.userId !== fleet.initiatorId
   );
 
-  const handleConfirm = (memberId: string, roleId?: string) => {
+  const handleConfirmClick = (memberId: string) => {
     if (!fleetId) return;
-    confirmMember(fleetId, memberId, roleId);
+    if (emptyRoleSlots.length === 0) {
+      confirmMember(fleetId, memberId);
+      Taro.showToast({ title: '已通过', icon: 'success' });
+      setTimeout(loadFleet, 200);
+      return;
+    }
+    const member = fleet.members.find((m) => m.id === memberId);
+    let defaultRoleId: string | null = null;
+    if (member?.preferredRoleId) {
+      const isPreferredEmpty = emptyRoleSlots.some((r) => r.id === member.preferredRoleId);
+      if (isPreferredEmpty) {
+        defaultRoleId = member.preferredRoleId;
+      }
+    }
+    setApprovingMemberId(memberId);
+    setSelectedRoleId(defaultRoleId);
+  };
+
+  const handleRolePickerConfirm = () => {
+    if (!fleetId || !approvingMemberId) return;
+    confirmMember(fleetId, approvingMemberId, selectedRoleId || undefined);
     Taro.showToast({ title: '已通过', icon: 'success' });
+    setApprovingMemberId(null);
+    setSelectedRoleId(null);
     setTimeout(loadFleet, 200);
+  };
+
+  const handleRolePickerClose = () => {
+    setApprovingMemberId(null);
+    setSelectedRoleId(null);
   };
 
   const handleReject = (memberId: string) => {
@@ -177,7 +228,7 @@ const MembersPage: React.FC = () => {
             <>
               <View
                 className={classnames(styles.actionBtn, styles.confirmBtn)}
-                onClick={() => handleConfirm(member.id)}
+                onClick={() => handleConfirmClick(member.id)}
               >
                 <Text>通过</Text>
               </View>
@@ -215,6 +266,8 @@ const MembersPage: React.FC = () => {
     );
   };
 
+  const hasGap = gapCounts.male > 0 || gapCounts.female > 0 || gapCounts.any > 0;
+
   return (
     <View className={styles.membersPage}>
       <View className={styles.summaryBar}>
@@ -235,6 +288,26 @@ const MembersPage: React.FC = () => {
           <Text className={styles.summaryLabel}>待确认开车</Text>
         </View>
       </View>
+
+      {hasGap && (
+        <View className={styles.gapBar}>
+          {gapCounts.male > 0 && (
+            <View className={classnames(styles.gapItem, styles.male)}>
+              <Text>♂ 缺{gapCounts.male}个男角</Text>
+            </View>
+          )}
+          {gapCounts.female > 0 && (
+            <View className={classnames(styles.gapItem, styles.female)}>
+              <Text>♀ 缺{gapCounts.female}个女角</Text>
+            </View>
+          )}
+          {gapCounts.any > 0 && (
+            <View className={classnames(styles.gapItem, styles.any)}>
+              <Text>○ 缺{gapCounts.any}个不限</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {unconfirmedForDriving.length > 0 && (
         <View className={styles.unconfirmedSection}>
@@ -400,6 +473,47 @@ const MembersPage: React.FC = () => {
           </Text>
           <View className={styles.flatSection}>
             {fleet.members.map((m) => renderMemberItem(m, false, true))}
+          </View>
+        </View>
+      )}
+
+      {approvingMemberId && (
+        <View className={styles.rolePickerMask} onClick={handleRolePickerClose}>
+          <View className={styles.rolePickerContent} onClick={(e) => e.stopPropagation()}>
+            <View className={styles.rolePickerHeader}>
+              <Text className={styles.rolePickerTitle}>分配角色</Text>
+              <View className={styles.rolePickerClose} onClick={handleRolePickerClose}>
+                <Text>✕</Text>
+              </View>
+            </View>
+            <View className={styles.rolePickerList}>
+              {emptyRoleSlots.map((role) => (
+                <View
+                  key={role.id}
+                  className={classnames(
+                    styles.rolePickerItem,
+                    selectedRoleId === role.id && styles.selected
+                  )}
+                  onClick={() => setSelectedRoleId(role.id)}
+                >
+                  <View className={styles.rolePickerItemInfo}>
+                    <Text className={styles.rolePickerItemName}>{role.name}</Text>
+                    <Text className={classnames(styles.rolePickerItemGender, getGenderClass(role.gender))}>
+                      {getGenderLabel(role.gender)}
+                    </Text>
+                  </View>
+                  {selectedRoleId === role.id && (
+                    <Text className={styles.rolePickerItemCheck}>✓</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+            <View
+              className={classnames(styles.rolePickerConfirm, !selectedRoleId && styles.disabled)}
+              onClick={() => selectedRoleId && handleRolePickerConfirm()}
+            >
+              <Text>确认分配</Text>
+            </View>
           </View>
         </View>
       )}

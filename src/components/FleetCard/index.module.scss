@@ -120,11 +120,43 @@
 
   .roleHint {
     display: flex;
-    align-items: center;
-    flex-wrap: wrap;
+    flex-direction: column;
     margin-top: $spacing-md;
     padding-top: $spacing-md;
     border-top: 1rpx solid $color-divider;
+
+    .genderGapRow {
+      display: flex;
+      gap: 12rpx;
+      margin-bottom: 10rpx;
+
+      .genderGapItem {
+        padding: 6rpx 16rpx;
+        border-radius: $radius-sm;
+        font-size: $font-size-xs;
+
+        &.male {
+          background-color: rgba(22, 93, 255, 0.1);
+          color: #165DFF;
+        }
+
+        &.female {
+          background-color: rgba(255, 107, 157, 0.1);
+          color: $color-emotion;
+        }
+
+        &.any {
+          background-color: $color-bg-tag;
+          color: $color-text-tertiary;
+        }
+      }
+    }
+
+    .roleNameRow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
     .roleHintLabel {
       font-size: $font-size-sm;

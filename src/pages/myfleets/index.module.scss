@@ -80,3 +80,163 @@
     }
   }
 }
+
+.joinedCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+  transition: all $transition-base;
+
+  &:active {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2rpx);
+  }
+}
+
+.confirmReminder {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $spacing-lg;
+  background: linear-gradient(90deg, rgba(255, 125, 0, 0.12) 0%, rgba(245, 63, 63, 0.08) 100%);
+
+  .confirmReminderText {
+    flex: 1;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-error;
+  }
+
+  .confirmReminderBtn {
+    flex-shrink: 0;
+    margin-left: $spacing-sm;
+    padding: 6rpx 20rpx;
+    border-radius: $radius-button;
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+}
+
+.joinedCardHeader {
+  padding: $spacing-lg $spacing-lg 0;
+
+  .joinedTitleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8rpx;
+
+    .joinedScriptName {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $color-text-primary;
+      flex: 1;
+      margin-right: $spacing-sm;
+      @include text-ellipsis;
+    }
+  }
+
+  .joinedSubInfo {
+    display: flex;
+    gap: $spacing-md;
+    margin-bottom: $spacing-sm;
+
+    .joinedSubText {
+      font-size: $font-size-sm;
+      color: $color-text-tertiary;
+    }
+  }
+}
+
+.joinedCardBody {
+  padding: $spacing-md $spacing-lg;
+
+  .detailRow {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12rpx;
+    font-size: $font-size-sm;
+    line-height: $line-height-normal;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .detailLabel {
+      flex-shrink: 0;
+      width: 140rpx;
+      color: $color-text-tertiary;
+      font-size: $font-size-sm;
+    }
+
+    .detailValue {
+      flex: 1;
+      color: $color-text-primary;
+      font-size: $font-size-sm;
+      word-break: break-all;
+    }
+
+    .statusConfirmed {
+      color: $color-status-confirmed;
+      font-weight: $font-weight-medium;
+    }
+
+    .statusPending {
+      color: $color-status-pending;
+      font-weight: $font-weight-medium;
+    }
+
+    .statusWaitlist {
+      color: $color-status-waitlist;
+      font-weight: $font-weight-medium;
+    }
+
+    .tagYes {
+      display: inline-block;
+      padding: 2rpx 14rpx;
+      border-radius: $radius-xs;
+      background-color: rgba(0, 180, 42, 0.08);
+      color: $color-success;
+      font-weight: $font-weight-medium;
+    }
+
+    .tagNo {
+      display: inline-block;
+      padding: 2rpx 14rpx;
+      border-radius: $radius-xs;
+      background-color: $color-bg-tag;
+      color: $color-text-tertiary;
+      font-weight: $font-weight-medium;
+    }
+
+    .assignedRole {
+      display: inline-block;
+      padding: 2rpx 14rpx;
+      border-radius: $radius-xs;
+      background-color: $color-primary-bg;
+      color: $color-primary;
+      font-weight: $font-weight-medium;
+    }
+
+    .remarkText {
+      color: $color-text-secondary;
+    }
+  }
+}
+
+.joinedCardFooter {
+  padding: $spacing-sm $spacing-lg $spacing-md;
+  border-top: 1rpx solid $color-divider;
+
+  .footerHint {
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+}
